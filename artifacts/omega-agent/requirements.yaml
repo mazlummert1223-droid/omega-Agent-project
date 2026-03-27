@@ -1,0 +1,19 @@
+packages:
+  "framer-motion": "For fluid UI animations, layout transitions, and futuristic entry effects"
+  "react-markdown": "To render assistant markdown responses properly"
+  "remark-gfm": "For markdown tables, lists, and strikethrough support"
+  "react-syntax-highlighter": "For high-quality code block syntax highlighting"
+  "date-fns": "For formatting conversation timestamps nicely"
+  "clsx": "For conditional class merging"
+  "tailwind-merge": "For merging tailwind classes safely"
+  "lucide-react": "For sleek, modern iconography"
+  "sonner": "For beautiful toast notifications"
+
+images:
+  - path: "artifacts/omega-agent/public/images/ai-core-bg.png"
+    description: "Abstract dark futuristic background with glowing neon purple and cyan geometric cybernetic lines, soft light leaks, and subtle particle dust. 8k resolution, sleek, professional, dark mode."
+    aspect_ratio: "16:9"
+
+notes:
+  - Using fetch + ReadableStream for custom SSE POST endpoints as per instructions.
+  - Using @workspace/api-client-react for standard REST hooks.

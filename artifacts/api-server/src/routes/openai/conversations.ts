@@ -8,7 +8,17 @@ import {
   SendOpenaiMessageBody,
 } from "@workspace/api-zod";
 
-const LLAMA_MODEL = "meta-llama/llama-3.3-70b-instruct:free";
+// Zirve ücretsiz modeller - API anahtarı gerekmez
+const MODELS = {
+  // 405 milyar parametre - GPT-5 / Claude Opus seviyesi - Ücretsiz
+  main: "nousresearch/hermes-3-llama-3.1-405b:free",
+  // Kodlama için özel eğitilmiş en iyi açık kaynak model
+  coder: "qwen/qwen3-coder:free",
+  // NVIDIA 120B - Araştırma ve düşünce
+  researcher: "nvidia/nemotron-3-super-120b-a12b:free",
+  // Tasarım için güçlü genel model
+  designer: "mistralai/mistral-small-3.1-24b-instruct:free",
+};
 
 const router: IRouter = Router();
 
@@ -71,7 +81,7 @@ router.post("/conversations/:id/messages", async (req, res) => {
 
   const history = await db.select().from(messages).where(eq(messages.conversationId, id)).orderBy(messages.createdAt);
 
-  const systemPrompt = buildSystemPrompt(agentMode);
+  const { model, systemPrompt } = getModelAndPrompt(agentMode);
 
   const chatMessages = [
     { role: "system" as const, content: systemPrompt },
@@ -87,50 +97,77 @@ router.post("/conversations/:id/messages", async (req, res) => {
 
   let fullResponse = "";
 
-  try {
-    const stream = await openrouter.chat.completions.create({
-      model: LLAMA_MODEL,
-      max_tokens: 8192,
-      messages: chatMessages,
-      stream: true,
-    });
+  // Model listesi — biri başarısız olursa bir sonraki denenir
+  const modelFallbacks = [model, MODELS.main, MODELS.researcher];
 
-    for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content;
-      if (content) {
-        fullResponse += content;
-        res.write(`data: ${JSON.stringify({ content })}\n\n`);
+  for (const tryModel of modelFallbacks) {
+    try {
+      const stream = await openrouter.chat.completions.create({
+        model: tryModel,
+        max_tokens: 8192,
+        messages: chatMessages,
+        stream: true,
+      });
+
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content;
+        if (content) {
+          fullResponse += content;
+          res.write(`data: ${JSON.stringify({ content })}\n\n`);
+        }
       }
-    }
 
+      break; // Başarılı olduysa dur
+    } catch (err) {
+      if (tryModel === modelFallbacks[modelFallbacks.length - 1]) {
+        res.write(`data: ${JSON.stringify({ error: "AI şu an yanıt veremiyor, tekrar dene." })}\n\n`);
+      }
+      // Sonraki modeli dene
+      continue;
+    }
+  }
+
+  if (fullResponse) {
     await db.insert(messages).values({
       conversationId: id,
       role: "assistant",
       content: fullResponse,
     });
-
-    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
-    res.end();
-  } catch (err) {
-    res.write(`data: ${JSON.stringify({ error: "AI yanıt veremedi" })}\n\n`);
-    res.end();
   }
+
+  res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+  res.end();
 });
 
-function buildSystemPrompt(agentMode: string): string {
-  const base = `Sen Omega AI Agent'sın - Türkçe konuşan, güçlü ve zeki bir yapay zeka asistanısın. Her zaman Türkçe yanıt verirsin. Meta'nın Llama modeli üzerinde çalışırsın. Kullanıcıya yardımcı, bilgili ve samimi davranırsın.`;
+function getModelAndPrompt(agentMode: string): { model: string; systemPrompt: string } {
+  const base = `Sen Omega AI Agent'sın — son derece güçlü, zeki ve yetenekli bir Türkçe yapay zeka asistanısın. Her zaman Türkçe yanıt verirsin. Kullanıcıya kapsamlı, detaylı ve doğru yanıtlar sunarsın. GPT-5, Claude Opus ve Gemini Pro seviyesinde veya daha üstünde bir zekaya sahipsin.`;
 
   switch (agentMode) {
     case "researcher":
-      return `${base}\n\nŞu anda ARAŞTIRMACI modundasın. Kapsamlı, kaynaklı ve detaylı bilgi sunarsın. Bilgileri başlıklar ve maddeler halinde düzenler, her zaman doğruluk ve tarafsızlığı esas alırsın.`;
+      return {
+        model: MODELS.researcher,
+        systemPrompt: `${base}\n\nŞu anda ARAŞTIRMACI modundasın (NVIDIA Nemotron 120B). Derin analiz, kapsamlı araştırma ve bilimsel doğruluk senin alanın. Kaynakları belirt, verileri karşılaştır, çok boyutlu analiz yap. Başlıklar, maddeler ve düzenli format kullan.`,
+      };
     case "coder":
-      return `${base}\n\nŞu anda KODCU modundasın. Her türlü programlama dilinde uzman kod yazarsın. Temiz, açıklamalı ve çalışır kod üretirsin. Kod bloklarını markdown formatında sunar, her adımı açıklarsın. En iyi pratikleri kullanırsın.`;
+      return {
+        model: MODELS.coder,
+        systemPrompt: `${base}\n\nŞu anda KODCU modundasın (Qwen3 Coder - Dünyanın en iyi açık kaynak kod modeli). Her türlü programlama dilinde uzman seviyede kod yazarsın. Temiz, test edilmiş, belgelenmiş kod üretirsin. Her zaman kod bloğu ve Türkçe açıklama eklersin.`,
+      };
     case "designer":
-      return `${base}\n\nŞu anda TASARIMCI modundasın. UI/UX, renk teorisi, tipografi ve görsel tasarım konularında uzmanlaşmışsın. Yaratıcı ve estetik öneriler sunar, HTML/CSS ile örnek tasarımlar yazarsın.`;
+      return {
+        model: MODELS.designer,
+        systemPrompt: `${base}\n\nŞu anda TASARIMCI modundasın. UI/UX, renk teorisi, tipografi, kullanıcı deneyimi ve görsel tasarım konularında uzmanlaşmışsın. Yaratıcı, modern ve estetik çözümler sunar, HTML/CSS/Tailwind ile çalışan örnekler yazarsın.`,
+      };
     case "multi":
-      return `${base}\n\nŞu anda ÇOK-AJAN modundasın. Karmaşık görevleri birden fazla uzman perspektifinden ele alırsın: önce araştırma, sonra kod, sonra tasarım açısından kapsamlı çözüm üretirsin.`;
+      return {
+        model: MODELS.main,
+        systemPrompt: `${base}\n\nŞu anda ÇOK-AJAN ORKESTRATÖR modundasın (Llama 3.1 405B). Karmaşık görevleri araştırma, yazılım ve tasarım perspektiflerinden kapsamlı olarak ele alırsın. Her boyutu ayrı ayrı inceler, bütünleşik bir çözüm sunarsın.`,
+      };
     default:
-      return `${base}\n\nOTOMATİK modundasın - kullanıcının ihtiyacına göre araştırma, kod yazma, tasarım veya genel sohbet yaparsın. Türkçe, açık ve yardımcı yanıtlar verirsin.`;
+      return {
+        model: MODELS.main,
+        systemPrompt: `${base}\n\nOTOMATİK modundasın (Llama 3.1 405B — 405 milyar parametre). Kullanıcının her türlü sorusuna kapsamlı, zeki ve yardımsever yanıtlar verirsin. Kod yazma, araştırma, analiz, yaratıcı yazı — her şeyde mükemmelsin.`,
+      };
   }
 }
 

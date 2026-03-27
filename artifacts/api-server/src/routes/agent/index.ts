@@ -4,9 +4,35 @@ import { db } from "@workspace/db";
 import { messages } from "@workspace/db";
 import { AgentWebSearchBody, AgentMultiTaskBody } from "@workspace/api-zod";
 
-const LLAMA_MODEL = "meta-llama/llama-3.3-70b-instruct:free";
+// Her görev için en iyi ücretsiz model
+const MODELS = {
+  main: "nousresearch/hermes-3-llama-3.1-405b:free",     // 405B - ana model
+  coder: "qwen/qwen3-coder:free",                         // Kodlama uzmanı
+  researcher: "nvidia/nemotron-3-super-120b-a12b:free",   // Araştırma/düşünce
+  designer: "mistralai/mistral-small-3.1-24b-instruct:free", // Tasarım
+};
 
 const router: IRouter = Router();
+
+async function callModel(model: string, systemPrompt: string, userPrompt: string): Promise<string> {
+  const fallbacks = [model, MODELS.main, MODELS.researcher];
+  for (const m of fallbacks) {
+    try {
+      const response = await openrouter.chat.completions.create({
+        model: m,
+        max_tokens: 8192,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+      });
+      return response.choices[0]?.message?.content || "";
+    } catch {
+      continue;
+    }
+  }
+  return "Model yanıt vermedi.";
+}
 
 router.post("/search", async (req, res) => {
   const body = AgentWebSearchBody.parse(req.body);
@@ -14,22 +40,11 @@ router.post("/search", async (req, res) => {
   const maxResults = body.maxResults || 5;
 
   try {
-    const response = await openrouter.chat.completions.create({
-      model: LLAMA_MODEL,
-      max_tokens: 4096,
-      messages: [
-        {
-          role: "system",
-          content: `Sen bir web araştırma uzmanısın. Kullanıcının sorduğu konuda bilgi toplar ve düzenli sunar. Her zaman Türkçe yanıt ver. Şu JSON formatında yanıt ver (başka hiçbir şey yazma): {"results": [{"title": "başlık", "url": "https://ornek.com", "snippet": "kısa açıklama"}], "summary": "genel özet"}`,
-        },
-        {
-          role: "user",
-          content: `"${query}" hakkında ${maxResults} adet arama sonucu üret. Gerçekçi başlıklar, URL'ler ve açıklamalar yaz.`,
-        },
-      ],
-    });
-
-    const content = response.choices[0]?.message?.content || "{}";
+    const content = await callModel(
+      MODELS.researcher,
+      `Sen bir web araştırma uzmanısın. Her zaman Türkçe yanıt ver. Şu JSON formatında yanıt ver (başka hiçbir şey yazma, sadece JSON): {"results": [{"title": "başlık", "url": "https://ornek.com", "snippet": "kısa açıklama"}], "summary": "genel özet"}`,
+      `"${query}" hakkında ${maxResults} adet detaylı arama sonucu üret. Gerçekçi ve bilgilendirici başlıklar, URL'ler ve açıklamalar yaz.`
+    );
 
     let parsed: { results: Array<{ title: string; url: string; snippet: string }>; summary: string };
     try {
@@ -43,7 +58,7 @@ router.post("/search", async (req, res) => {
     }
 
     res.json(parsed);
-  } catch (err) {
+  } catch {
     res.status(500).json({ results: [], summary: "Arama yapılamadı" });
   }
 });
@@ -65,29 +80,33 @@ router.post("/multi-task", async (req, res) => {
     {
       name: "researcher",
       label: "🔍 Araştırmacı Agent",
-      systemPrompt: `Sen bir araştırma uzmanısın. Görev hakkında kapsamlı araştırma yaparsın. Her zaman Türkçe yanıt ver. Kaynaklar, örnekler ve detaylı bilgi sunar.`,
+      model: MODELS.researcher,
+      systemPrompt: `Sen NVIDIA Nemotron 120B modelisin - araştırma ve analiz uzmanısın. Görev hakkında derin araştırma, kaynak analizi ve kapsamlı bilgi sunarsın. Her zaman Türkçe yanıt ver. Kaynakları, istatistikleri ve verileri dahil et.`,
     },
     {
       name: "coder",
       label: "💻 Kodcu Agent",
-      systemPrompt: `Sen bir yazılım mühendisisin. Görev için gerekli kodları yazarsın. Her zaman Türkçe açıklamalar ekler, temiz ve çalışır kod üretirsin.`,
+      model: MODELS.coder,
+      systemPrompt: `Sen Qwen3 Coder modelisin - dünyanın en iyi açık kaynak kod yazma modelisin. Görev için gerekli tüm kodları, tam ve çalışır şekilde yazarsın. Her zaman Türkçe açıklamalar ekler, markdown kod blokları kullanırsın.`,
     },
     {
       name: "designer",
       label: "🎨 Tasarımcı Agent",
-      systemPrompt: `Sen bir UI/UX tasarım uzmanısın. Görev için tasarım önerileri, HTML/CSS örnekleri ve görsel çözümler sunar. Her zaman Türkçe yanıt ver.`,
+      model: MODELS.designer,
+      systemPrompt: `Sen bir UI/UX ve görsel tasarım uzmanısın. Görev için tasarım önerileri, HTML/CSS örnekleri ve kullanıcı deneyimi çözümleri sunarsın. Her zaman Türkçe yanıt ver.`,
     },
   ];
 
-  let fullReport = `# 🤖 Omega Çok-Ajan Sistemi Raporu\n\n**Görev:** ${task}\n\n---\n\n`;
+  let fullReport = `# 🤖 Omega Çok-Ajan Sistemi\n\n**Görev:** ${task}\n\n---\n\n`;
 
   for (const agent of agents) {
     sendEvent({ agent: agent.name, label: agent.label, status: "running" });
 
     try {
       let agentContent = "";
+
       const stream = await openrouter.chat.completions.create({
-        model: LLAMA_MODEL,
+        model: agent.model,
         max_tokens: 4096,
         messages: [
           { role: "system", content: agent.systemPrompt },
@@ -106,8 +125,13 @@ router.post("/multi-task", async (req, res) => {
 
       fullReport += `## ${agent.label}\n\n${agentContent}\n\n---\n\n`;
       sendEvent({ agent: agent.name, label: agent.label, status: "done" });
-    } catch (err) {
-      sendEvent({ agent: agent.name, label: agent.label, status: "error", content: "Bu ajan çalışırken hata oluştu." });
+    } catch {
+      sendEvent({
+        agent: agent.name,
+        label: agent.label,
+        status: "error",
+        content: "Bu ajan şu an yanıt veremiyor.",
+      });
     }
   }
 

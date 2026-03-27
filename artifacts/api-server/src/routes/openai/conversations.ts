@@ -2,11 +2,13 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { conversations, messages } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { openrouter } from "@workspace/integrations-openrouter-ai";
 import {
   CreateOpenaiConversationBody,
   SendOpenaiMessageBody,
 } from "@workspace/api-zod";
+
+const LLAMA_MODEL = "meta-llama/llama-3.3-70b-instruct:free";
 
 const router: IRouter = Router();
 
@@ -86,9 +88,9 @@ router.post("/conversations/:id/messages", async (req, res) => {
   let fullResponse = "";
 
   try {
-    const stream = await openai.chat.completions.create({
-      model: "gpt-5.2",
-      max_completion_tokens: 8192,
+    const stream = await openrouter.chat.completions.create({
+      model: LLAMA_MODEL,
+      max_tokens: 8192,
       messages: chatMessages,
       stream: true,
     });
@@ -116,19 +118,19 @@ router.post("/conversations/:id/messages", async (req, res) => {
 });
 
 function buildSystemPrompt(agentMode: string): string {
-  const base = `Sen Omega AI Agent'sın - Türkçe konuşan gelişmiş bir yapay zeka asistanısın. Her zaman Türkçe yanıt verirsin. Kullanıcıya yardımcı, bilgili ve samimi davranırsın.`;
+  const base = `Sen Omega AI Agent'sın - Türkçe konuşan, güçlü ve zeki bir yapay zeka asistanısın. Her zaman Türkçe yanıt verirsin. Meta'nın Llama modeli üzerinde çalışırsın. Kullanıcıya yardımcı, bilgili ve samimi davranırsın.`;
 
   switch (agentMode) {
     case "researcher":
-      return `${base}\n\nŞu anda ARAŞTIRMACI modundasın. Web araştırması yaparak kapsamlı, kaynaklı ve detaylı bilgi sunarsın. Bilgileri düzenli bir şekilde başlıklar ve maddeler halinde sunar, kaynakları belirtirsin.`;
+      return `${base}\n\nŞu anda ARAŞTIRMACI modundasın. Kapsamlı, kaynaklı ve detaylı bilgi sunarsın. Bilgileri başlıklar ve maddeler halinde düzenler, her zaman doğruluk ve tarafsızlığı esas alırsın.`;
     case "coder":
-      return `${base}\n\nŞu anda KODCU modundasın. Kod yazma, hata ayıklama ve yazılım geliştirme konularında uzmanlaşmışsın. Her zaman açıklamalı, temiz ve çalışır kod yazarsın. Kod bloklarını markdown formatında sunar, her adımı açıklarsın.`;
+      return `${base}\n\nŞu anda KODCU modundasın. Her türlü programlama dilinde uzman kod yazarsın. Temiz, açıklamalı ve çalışır kod üretirsin. Kod bloklarını markdown formatında sunar, her adımı açıklarsın. En iyi pratikleri kullanırsın.`;
     case "designer":
-      return `${base}\n\nŞu anda TASARIMCI modundasın. UI/UX tasarım, renk teorisi, tipografi ve görsel tasarım konularında uzmanlaşmışsın. Yaratıcı ve estetik öneriler sunar, HTML/CSS ile örnek tasarımlar yazarsın.`;
+      return `${base}\n\nŞu anda TASARIMCI modundasın. UI/UX, renk teorisi, tipografi ve görsel tasarım konularında uzmanlaşmışsın. Yaratıcı ve estetik öneriler sunar, HTML/CSS ile örnek tasarımlar yazarsın.`;
     case "multi":
-      return `${base}\n\nŞu anda ÇOK-AJAN modundasın. Karmaşık görevleri farklı uzmanlık alanlarına bölerek çözersin. Her alanı (araştırma, kod, tasarım) ayrı ayrı ele alır, kapsamlı bir çözüm sunar.`;
+      return `${base}\n\nŞu anda ÇOK-AJAN modundasın. Karmaşık görevleri birden fazla uzman perspektifinden ele alırsın: önce araştırma, sonra kod, sonra tasarım açısından kapsamlı çözüm üretirsin.`;
     default:
-      return `${base}\n\nOTOMATİK modundasın - kullanıcının ihtiyacına göre araştırma, kod yazma, tasarım veya genel sohbet moduna geçersin.`;
+      return `${base}\n\nOTOMATİK modundasın - kullanıcının ihtiyacına göre araştırma, kod yazma, tasarım veya genel sohbet yaparsın. Türkçe, açık ve yardımcı yanıtlar verirsin.`;
   }
 }
 

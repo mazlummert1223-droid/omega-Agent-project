@@ -1,3 +1,12 @@
+# Omega AI Agent
+
+## Proje Özeti
+Tamamen Türkçe konuşan Ultimate AI Agent. OpenAI kullanmaz - Meta'nın Llama 3.3 70B modeli (açık kaynak, ücretsiz) ve Pollinations.AI görsel üretimi ile çalışır.
+
+## AI Modelleri (API anahtarı gerekmez)
+- **Sohbet/Kod/Araştırma:** Meta Llama 3.3 70B (OpenRouter üzerinden ücretsiz)
+- **Görsel üretim:** Pollinations.AI (tamamen ücretsiz, API anahtarı yok)
+
 # Workspace
 
 ## Overview

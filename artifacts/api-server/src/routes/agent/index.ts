@@ -1,9 +1,10 @@
 import { Router, type IRouter } from "express";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { openrouter } from "@workspace/integrations-openrouter-ai";
 import { db } from "@workspace/db";
 import { messages } from "@workspace/db";
-import { eq } from "drizzle-orm";
 import { AgentWebSearchBody, AgentMultiTaskBody } from "@workspace/api-zod";
+
+const LLAMA_MODEL = "meta-llama/llama-3.3-70b-instruct:free";
 
 const router: IRouter = Router();
 
@@ -13,17 +14,18 @@ router.post("/search", async (req, res) => {
   const maxResults = body.maxResults || 5;
 
   try {
-    const searchPrompt = `Web'de "${query}" hakkında arama yap ve ${maxResults} adet sonuç bul. Her sonuç için başlık, URL ve kısa açıklama ver. JSON formatında döndür: {"results": [{"title": "...", "url": "...", "snippet": "..."}], "summary": "Genel özet..."}`;
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-5.2",
-      max_completion_tokens: 4096,
+    const response = await openrouter.chat.completions.create({
+      model: LLAMA_MODEL,
+      max_tokens: 4096,
       messages: [
         {
           role: "system",
-          content: "Sen bir web araştırma uzmanısın. Kullanıcının sorduğu konuda bilgi toplar ve düzenli bir şekilde sunar. Her zaman Türkçe yanıt ver. JSON formatında yanıt ver.",
+          content: `Sen bir web araştırma uzmanısın. Kullanıcının sorduğu konuda bilgi toplar ve düzenli sunar. Her zaman Türkçe yanıt ver. Şu JSON formatında yanıt ver (başka hiçbir şey yazma): {"results": [{"title": "başlık", "url": "https://ornek.com", "snippet": "kısa açıklama"}], "summary": "genel özet"}`,
         },
-        { role: "user", content: searchPrompt },
+        {
+          role: "user",
+          content: `"${query}" hakkında ${maxResults} adet arama sonucu üret. Gerçekçi başlıklar, URL'ler ve açıklamalar yaz.`,
+        },
       ],
     });
 
@@ -35,7 +37,7 @@ router.post("/search", async (req, res) => {
       parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { results: [], summary: content };
     } catch {
       parsed = {
-        results: [{ title: query, url: "#", snippet: content }],
+        results: [{ title: query, url: "#", snippet: content.slice(0, 300) }],
         summary: content,
       };
     }
@@ -62,36 +64,33 @@ router.post("/multi-task", async (req, res) => {
   const agents = [
     {
       name: "researcher",
-      label: "🔍 Araştırmacı",
-      prompt: `Sen bir araştırma uzmanısın. Şu görev için internet araştırması yap ve kapsamlı bilgi sun: "${task}". Türkçe yanıt ver.`,
+      label: "🔍 Araştırmacı Agent",
+      systemPrompt: `Sen bir araştırma uzmanısın. Görev hakkında kapsamlı araştırma yaparsın. Her zaman Türkçe yanıt ver. Kaynaklar, örnekler ve detaylı bilgi sunar.`,
     },
     {
       name: "coder",
-      label: "💻 Kodcu",
-      prompt: `Sen bir yazılım geliştirme uzmanısın. Şu görev için gerekli kodu yaz: "${task}". Türkçe açıklamalar ekle.`,
+      label: "💻 Kodcu Agent",
+      systemPrompt: `Sen bir yazılım mühendisisin. Görev için gerekli kodları yazarsın. Her zaman Türkçe açıklamalar ekler, temiz ve çalışır kod üretirsin.`,
     },
     {
       name: "designer",
-      label: "🎨 Tasarımcı",
-      prompt: `Sen bir UI/UX tasarım uzmanısın. Şu görev için tasarım önerileri ve HTML/CSS örnek yaz: "${task}". Türkçe açıklamalar ekle.`,
+      label: "🎨 Tasarımcı Agent",
+      systemPrompt: `Sen bir UI/UX tasarım uzmanısın. Görev için tasarım önerileri, HTML/CSS örnekleri ve görsel çözümler sunar. Her zaman Türkçe yanıt ver.`,
     },
   ];
 
-  let fullReport = `# 🤖 Omega Çok-Ajan Raporu\n\n**Görev:** ${task}\n\n---\n\n`;
+  let fullReport = `# 🤖 Omega Çok-Ajan Sistemi Raporu\n\n**Görev:** ${task}\n\n---\n\n`;
 
   for (const agent of agents) {
     sendEvent({ agent: agent.name, label: agent.label, status: "running" });
 
     try {
       let agentContent = "";
-      const stream = await openai.chat.completions.create({
-        model: "gpt-5.2",
-        max_completion_tokens: 4096,
+      const stream = await openrouter.chat.completions.create({
+        model: LLAMA_MODEL,
+        max_tokens: 4096,
         messages: [
-          {
-            role: "system",
-            content: agent.prompt,
-          },
+          { role: "system", content: agent.systemPrompt },
           { role: "user", content: task },
         ],
         stream: true,

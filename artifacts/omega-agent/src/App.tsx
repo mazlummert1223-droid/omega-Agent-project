@@ -1,4 +1,4 @@
-import React from "react";
+import React, { createContext, useContext, useState } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
@@ -8,45 +8,58 @@ import ChatPage from "@/pages/Chat";
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: false,
-    },
+    queries: { refetchOnWindowFocus: false, retry: false },
   },
 });
 
+// Mobile sidebar context
+interface SidebarCtx {
+  open: boolean;
+  toggle: () => void;
+  close: () => void;
+}
+export const SidebarContext = createContext<SidebarCtx>({ open: false, toggle: () => {}, close: () => {} });
+export const useSidebar = () => useContext(SidebarContext);
+
 function NotFound() {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center relative z-10 text-center px-4">
-      <h1 className="text-6xl font-display font-bold text-primary text-glow mb-4">404</h1>
-      <p className="text-xl text-muted-foreground font-mono">Böyle bir sistem protokolü bulunamadı.</p>
-      <a href="/" className="mt-8 text-accent hover:underline decoration-accent underline-offset-4">
-        Ana Ağa Dön
-      </a>
+    <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
+      <span className="text-7xl mb-6">🌌</span>
+      <h1 className="text-4xl font-display font-bold gemini-gradient mb-3">404</h1>
+      <p className="text-muted-foreground">Bu sayfa bulunamadı.</p>
+      <a href="/" className="mt-6 text-primary hover:underline">Ana Sayfaya Dön</a>
     </div>
   );
 }
 
 function MainLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex h-screen w-full bg-background overflow-hidden relative selection:bg-primary/30 selection:text-white">
-      {/* Global Background Image Layer */}
-      <div 
-        className="absolute inset-0 z-0 opacity-20 pointer-events-none mix-blend-screen"
-        style={{
-          backgroundImage: `url(${import.meta.env.BASE_URL}images/ai-core-bg.png)`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center'
-        }}
-      />
-      {/* Global Vignette */}
-      <div className="absolute inset-0 z-0 shadow-[inset_0_0_150px_rgba(0,0,0,0.9)] pointer-events-none" />
+  const [open, setOpen] = useState(false);
+  const toggle = () => setOpen(p => !p);
+  const close = () => setOpen(false);
 
-      <Sidebar />
-      <main className="flex-1 flex flex-col relative z-10 shadow-[-10px_0_30px_rgba(0,0,0,0.5)] bg-background/50 backdrop-blur-sm border-l border-border/30">
-        {children}
-      </main>
-    </div>
+  return (
+    <SidebarContext.Provider value={{ open, toggle, close }}>
+      <div className="flex h-screen w-full bg-background overflow-hidden relative">
+        {/* Mobile overlay */}
+        {open && (
+          <div className="sidebar-overlay md:hidden" onClick={close} />
+        )}
+
+        {/* Sidebar */}
+        <div className={`
+          fixed md:relative z-50 md:z-auto h-full
+          transform transition-transform duration-300 ease-in-out
+          ${open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}>
+          <Sidebar />
+        </div>
+
+        {/* Main */}
+        <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          {children}
+        </main>
+      </div>
+    </SidebarContext.Provider>
   );
 }
 
@@ -62,25 +75,25 @@ function Router() {
   );
 }
 
-function App() {
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
         <Router />
       </WouterRouter>
-      <Toaster 
-        theme="dark" 
+      <Toaster
+        theme="dark"
         position="top-center"
         toastOptions={{
-          className: "glass-panel border-primary/50 text-white font-sans rounded-xl",
           style: {
-            background: "rgba(18, 18, 26, 0.9)",
+            background: "rgba(20, 25, 40, 0.95)",
+            border: "1px solid rgba(66, 133, 244, 0.3)",
+            color: "#fff",
+            borderRadius: "12px",
             backdropFilter: "blur(12px)",
           }
-        }} 
+        }}
       />
     </QueryClientProvider>
   );
 }
-
-export default App;

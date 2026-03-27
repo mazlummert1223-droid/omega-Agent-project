@@ -1,74 +1,120 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Image as ImageIcon, Sparkles, X, Mic } from 'lucide-react';
-import { Button } from './ui/Button';
+import { Send, Image as ImageIcon, Sparkles, Square, Mic, MicOff, Bot, Search, Code2, Paintbrush, Layers, ChevronUp } from 'lucide-react';
 import { AgentMode } from '@/hooks/use-chat';
 import { cn } from '@/lib/utils';
-import { AgentBadge } from './AgentBadge';
-import { useGenerateOpenaiImage } from '@workspace/api-client-react';
 import { toast } from 'sonner';
 
 interface ChatInputProps {
-  onSend: (message: string, mode: AgentMode) => void;
+  onSend: (message: string, mode: AgentMode, imageUrl?: string) => void;
   isStreaming: boolean;
   onStop: () => void;
 }
 
-const MODES: { id: AgentMode; label: string }[] = [
-  { id: 'auto', label: 'Otomatik' },
-  { id: 'researcher', label: 'Araştırmacı' },
-  { id: 'coder', label: 'Kodcu' },
-  { id: 'designer', label: 'Tasarımcı' },
-  { id: 'multi', label: 'Çok-Ajan' },
+const MODES: { id: AgentMode; label: string; icon: React.ReactNode; desc: string }[] = [
+  { id: 'auto', label: 'Otomatik', icon: <Bot className="w-4 h-4" />, desc: 'Her şeyi yapabilir' },
+  { id: 'researcher', label: 'Araştırmacı', icon: <Search className="w-4 h-4" />, desc: 'Derin analiz ve araştırma' },
+  { id: 'coder', label: 'Kodcu', icon: <Code2 className="w-4 h-4" />, desc: 'Her dilde kod yazar' },
+  { id: 'designer', label: 'Tasarımcı', icon: <Paintbrush className="w-4 h-4" />, desc: 'UI/UX ve görsel tasarım' },
+  { id: 'multi', label: 'Çok-Ajan', icon: <Layers className="w-4 h-4" />, desc: '3 ajan aynı anda çalışır' },
 ];
+
+const IMAGE_STYLES = [
+  { id: 'default', label: '🖼️ Gerçekçi' },
+  { id: 'anime', label: '🎌 Anime' },
+  { id: 'pony', label: '🦄 Pony AI' },
+  { id: '3d', label: '🎮 3D' },
+  { id: 'art', label: '🎨 Sanatsal' },
+];
+
+const IMAGE_KEYWORDS = ['resim', 'görsel', 'çiz', 'üret', 'fotoğraf', 'anime', 'pony', 'image', 'draw', 'generate'];
 
 export function ChatInput({ onSend, isStreaming, onStop }: ChatInputProps) {
   const [input, setInput] = useState('');
   const [mode, setMode] = useState<AgentMode>('auto');
-  const [isModeSelectorOpen, setIsModeSelectorOpen] = useState(false);
+  const [showModes, setShowModes] = useState(false);
+  const [showImageStyles, setShowImageStyles] = useState(false);
+  const [imageStyle, setImageStyle] = useState('default');
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const recognitionRef = useRef<any>(null);
 
-  const generateImageMutation = useGenerateOpenaiImage();
-
-  // Auto-resize textarea
+  // Auto-resize
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 180)}px`;
     }
   }, [input]);
 
-  const handleSubmit = (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!input.trim() || isStreaming) return;
+  // Detect image request
+  const isImageRequest = IMAGE_KEYWORDS.some(k => input.toLowerCase().includes(k));
 
-    const lowerInput = input.toLowerCase();
-    
-    // Auto-detect image generation request
-    if ((lowerInput.includes('resim') || lowerInput.includes('görsel')) && (mode === 'auto' || mode === 'designer')) {
-      toast.info('Görsel üretiliyor...', { icon: <Sparkles className="w-4 h-4 text-primary" /> });
-      
-      generateImageMutation.mutate({ data: { prompt: input, size: '1024x1024' } }, {
-        onSuccess: (data) => {
-          // Construct a markdown image response to inject into chat
-          const markdownImg = `İşte istediğiniz görsel:\n\n![Üretilen Görsel](data:image/png;base64,${data.b64_json})`;
-          // We send this to the backend as user prompt, but ideally backend handles the image tool.
-          // Since our backend doesn't have an explicit tool-call loop for images yet, 
-          // we just send a normal message explaining we generated it.
-          onSend(input + "\n\n(Not: Görsel üretildi, sisteme kaydediliyor)", mode);
-          
-          // Actually, rendering the base64 directly in chat might be too large. 
-          // Let's just trigger the normal flow and assume backend handles it if it's smart,
-          // OR we just intercept it. For this assignment, we'll send it to the chat.
-        },
-        onError: () => toast.error('Görsel üretilemedi.')
-      });
-      setInput('');
+  // Voice input
+  const toggleVoice = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      toast.error('Tarayıcınız ses tanımayı desteklemiyor');
       return;
     }
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+    const Rec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new Rec();
+    recognition.lang = 'tr-TR';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.onresult = (e: any) => {
+      const text = e.results[0][0].transcript;
+      setInput(prev => prev + (prev ? ' ' : '') + text);
+      setIsListening(false);
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  };
 
+  const generateAndSend = async () => {
+    if (!input.trim()) return;
+    setIsGeneratingImage(true);
+    toast.info('Görsel üretiliyor... 🎨');
+
+    try {
+      const response = await fetch('/api/openai/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: input.trim(), style: imageStyle }),
+      });
+      const data = await response.json();
+      if (data.url) {
+        onSend(input.trim(), mode, data.url);
+        toast.success('Görsel üretildi!');
+      } else {
+        throw new Error('no url');
+      }
+    } catch {
+      toast.error('Görsel üretilemedi, düz mesaj olarak gönderiliyor...');
+      onSend(input.trim(), mode);
+    } finally {
+      setIsGeneratingImage(false);
+      setInput('');
+    }
+  };
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!input.trim() || isStreaming || isGeneratingImage) return;
+    if (isImageRequest && (mode === 'auto' || mode === 'designer')) {
+      generateAndSend();
+      return;
+    }
     onSend(input.trim(), mode);
     setInput('');
-    setIsModeSelectorOpen(false);
+    setShowModes(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -78,90 +124,157 @@ export function ChatInput({ onSend, isStreaming, onStop }: ChatInputProps) {
     }
   };
 
+  const activeMode = MODES.find(m => m.id === mode) || MODES[0];
+
   return (
-    <div className="relative w-full max-w-4xl mx-auto px-4 pb-6 pt-2">
-      {/* Mode Selector Popover */}
-      {isModeSelectorOpen && (
-        <div className="absolute bottom-full left-4 mb-4 glass-panel rounded-2xl p-2 flex flex-wrap gap-2 z-50 animate-in fade-in slide-in-from-bottom-2">
-          {MODES.map(m => (
-            <button
-              key={m.id}
-              onClick={() => { setMode(m.id); setIsModeSelectorOpen(false); }}
-              className={cn(
-                "px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
-                mode === m.id 
-                  ? "bg-primary text-white shadow-[0_0_10px_rgba(176,38,255,0.4)]" 
-                  : "text-muted-foreground hover:bg-secondary hover:text-white"
-              )}
-            >
-              {m.label}
-            </button>
-          ))}
+    <div className="w-full max-w-3xl mx-auto px-3 pb-5 pt-2 relative">
+      {/* Mode Selector Panel */}
+      {showModes && (
+        <div className="absolute bottom-full mb-2 left-3 right-3 bg-card border border-border rounded-2xl p-2 shadow-2xl z-50 animate-fade-up">
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wider px-3 py-1.5">Ajan Modu Seç</p>
+          <div className="space-y-0.5">
+            {MODES.map(m => (
+              <button
+                key={m.id}
+                onClick={() => { setMode(m.id); setShowModes(false); }}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors text-left",
+                  mode === m.id ? "bg-primary/15 text-white" : "text-foreground/70 hover:bg-secondary hover:text-white"
+                )}
+              >
+                <span className={mode === m.id ? "text-primary" : "text-muted-foreground"}>{m.icon}</span>
+                <div>
+                  <div className="font-medium">{m.label}</div>
+                  <div className="text-xs text-muted-foreground">{m.desc}</div>
+                </div>
+                {mode === m.id && <span className="ml-auto text-primary text-xs">●</span>}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
-      <div className="relative glass-panel rounded-3xl p-2 flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.5)] border-primary/20 focus-within:border-primary/50 focus-within:shadow-[0_0_30px_rgba(176,38,255,0.15)] transition-all duration-300">
-        
-        {/* Glow effect behind input */}
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 rounded-3xl pointer-events-none" />
-
-        {/* Top toolbar */}
-        <div className="flex items-center justify-between px-3 pt-2 pb-1 relative z-10">
-          <button 
-            onClick={() => setIsModeSelectorOpen(!isModeSelectorOpen)}
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-            title="Ajan Modunu Değiştir"
-          >
-            <AgentBadge mode={mode} className="cursor-pointer" />
-          </button>
-          
-          <div className="flex gap-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-accent rounded-full">
-              <ImageIcon className="w-4 h-4" />
-            </Button>
+      {/* Image Style Panel */}
+      {showImageStyles && (
+        <div className="absolute bottom-full mb-2 left-3 right-3 bg-card border border-border rounded-2xl p-3 shadow-2xl z-50 animate-fade-up">
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2">Görsel Stili</p>
+          <div className="flex flex-wrap gap-2">
+            {IMAGE_STYLES.map(s => (
+              <button
+                key={s.id}
+                onClick={() => { setImageStyle(s.id); setShowImageStyles(false); }}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-sm border transition-colors",
+                  imageStyle === s.id ? "bg-primary/20 border-primary text-white" : "border-border text-foreground/70 hover:border-primary/50 hover:text-white"
+                )}
+              >
+                {s.label}
+              </button>
+            ))}
           </div>
         </div>
+      )}
 
-        {/* Input Area */}
-        <div className="flex items-end gap-2 px-2 pb-2 relative z-10">
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Omega'ya mesaj gönder... (Örn: 'Bana bir web sitesi kodla' veya 'Bir resim çiz')"
-            className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/50 resize-none outline-none py-3 px-2 max-h-[200px] overflow-y-auto text-[15px]"
-            rows={1}
-          />
-          
-          <div className="flex-shrink-0 mb-1">
-            {isStreaming ? (
-              <Button 
-                onClick={onStop} 
-                variant="default" 
-                size="icon" 
-                className="rounded-full bg-destructive border-destructive shadow-[0_0_15px_rgba(255,0,0,0.4)] hover:bg-destructive/90"
+      {/* Main Input Container */}
+      <div className={cn(
+        "relative bg-secondary/60 border border-border rounded-3xl transition-all duration-200 input-glow overflow-hidden",
+        isListening && "border-red-500/50"
+      )}>
+        {/* Textarea */}
+        <textarea
+          ref={textareaRef}
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={
+            isListening ? "🎤 Dinleniyor..." :
+            mode === 'researcher' ? "Araştırmak istediğin konuyu yaz..." :
+            mode === 'coder' ? "Yazmamı istediğin kodu anlat..." :
+            mode === 'designer' ? "Tasarım veya görsel isteğini yaz..." :
+            mode === 'multi' ? "Karmaşık görevini anlat..." :
+            "Omega'ya bir şey sor..."
+          }
+          disabled={isListening}
+          className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/50 resize-none outline-none px-5 pt-4 pb-2 max-h-[180px] text-[15px] leading-relaxed"
+          rows={1}
+        />
+
+        {/* Bottom toolbar */}
+        <div className="flex items-center justify-between px-3 pb-3 pt-1">
+          <div className="flex items-center gap-1">
+            {/* Mode selector */}
+            <button
+              onClick={() => { setShowModes(!showModes); setShowImageStyles(false); }}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
+                showModes ? "bg-primary/20 border-primary text-white" : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-white"
+              )}
+            >
+              <span>{activeMode.icon}</span>
+              <span>{activeMode.label}</span>
+              <ChevronUp className={cn("w-3 h-3 transition-transform", showModes && "rotate-180")} />
+            </button>
+
+            {/* Image style */}
+            <button
+              onClick={() => { setShowImageStyles(!showImageStyles); setShowModes(false); }}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
+                isImageRequest ? "border-pink-500/50 text-pink-400 bg-pink-500/10" : "border-border/60 text-muted-foreground hover:border-pink-500/40 hover:text-pink-300"
+              )}
+              title="Görsel stili seç"
+            >
+              <ImageIcon className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{IMAGE_STYLES.find(s => s.id === imageStyle)?.label || '🖼️'}</span>
+            </button>
+
+            {/* Voice input */}
+            <button
+              onClick={toggleVoice}
+              className={cn(
+                "p-1.5 rounded-full border transition-all",
+                isListening ? "border-red-500 text-red-400 bg-red-500/10 animate-pulse-soft" : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-white"
+              )}
+              title={isListening ? "Durdur" : "Sesle yaz"}
+            >
+              {isListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+
+          {/* Send / Stop button */}
+          <div>
+            {isStreaming || isGeneratingImage ? (
+              <button
+                onClick={onStop}
+                className="w-9 h-9 rounded-full bg-foreground/10 hover:bg-foreground/20 border border-border flex items-center justify-center transition-all"
+                title="Durdur"
               >
-                <X className="w-5 h-5" />
-              </Button>
+                <Square className="w-4 h-4 text-foreground fill-foreground" />
+              </button>
             ) : (
-              <Button 
-                onClick={handleSubmit} 
+              <button
+                onClick={handleSubmit}
                 disabled={!input.trim()}
-                variant="default" 
-                size="icon" 
-                className="rounded-full rounded-tr-sm"
+                className={cn(
+                  "w-9 h-9 rounded-full flex items-center justify-center transition-all",
+                  input.trim()
+                    ? "bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/30"
+                    : "bg-secondary text-muted-foreground/40 cursor-not-allowed"
+                )}
               >
-                <Send className="w-4 h-4 ml-0.5" />
-              </Button>
+                {isImageRequest && (mode === 'auto' || mode === 'designer')
+                  ? <Sparkles className="w-4 h-4" />
+                  : <Send className="w-4 h-4 ml-0.5" />
+                }
+              </button>
             )}
           </div>
         </div>
       </div>
-      
-      <div className="text-center mt-3 text-xs font-mono text-muted-foreground/60">
-        Omega AI Agent her zaman doğru sonuç vermeyebilir. Lütfen önemli bilgileri kontrol edin.
-      </div>
+
+      <p className="text-center text-[11px] text-muted-foreground/40 mt-2">
+        Omega yanlış bilgi verebilir. Önemli konularda doğrulayın.
+      </p>
     </div>
   );
 }

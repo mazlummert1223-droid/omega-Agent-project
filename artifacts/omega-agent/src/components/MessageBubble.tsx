@@ -1,68 +1,85 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from './MarkdownRenderer';
-import { Bot, User } from 'lucide-react';
-import { AgentBadge } from './AgentBadge';
-import { format } from 'date-fns';
+import { User } from 'lucide-react';
+
+// Gemini star for AI avatar
+function GeminiStar() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
+      <path d="M12 2C12 2 13 9 18 12C13 15 12 22 12 22C12 22 11 15 6 12C11 9 12 2 12 2Z" fill="url(#msgGrad)"/>
+      <defs>
+        <linearGradient id="msgGrad" x1="6" y1="2" x2="18" y2="22" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#4285F4"/>
+          <stop offset="0.5" stopColor="#9B72CB"/>
+          <stop offset="1" stopColor="#D96570"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
 
 interface MessageBubbleProps {
   role: 'user' | 'assistant';
   content: string;
   createdAt?: string;
-  agentMode?: string;
+  imageUrl?: string;
+  isStreaming?: boolean;
 }
 
-export function MessageBubble({ role, content, createdAt, agentMode }: MessageBubbleProps) {
+export function MessageBubble({ role, content, createdAt, imageUrl, isStreaming }: MessageBubbleProps) {
   const isUser = role === 'user';
 
+  if (isUser) {
+    return (
+      <div className="flex justify-end px-4 md:px-8 py-2 animate-fade-up">
+        <div className="max-w-[80%] md:max-w-[70%]">
+          <div className="bg-primary/15 border border-primary/20 rounded-3xl rounded-tr-md px-5 py-3.5 text-[15px] leading-relaxed text-foreground/90 whitespace-pre-wrap">
+            {content}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={cn(
-      "flex w-full gap-4 py-6 px-4 md:px-8 hover:bg-secondary/20 transition-colors group",
-      isUser ? "flex-row-reverse" : "flex-row"
-    )}>
+    <div className="flex gap-3 px-4 md:px-8 py-3 animate-fade-up">
       {/* Avatar */}
-      <div className={cn(
-        "flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center border shadow-lg",
-        isUser 
-          ? "bg-gradient-to-br from-primary/80 to-accent/80 border-primary/50 text-white" 
-          : "bg-card border-accent/30 text-accent shadow-[0_0_15px_rgba(0,240,255,0.15)]"
-      )}>
-        {isUser ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
+      <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-primary/20 flex items-center justify-center mt-0.5">
+        <GeminiStar />
       </div>
 
-      {/* Message Content */}
-      <div className={cn(
-        "flex flex-col gap-2 max-w-[85%] md:max-w-[75%]",
-        isUser ? "items-end" : "items-start"
-      )}>
-        <div className="flex items-center gap-3 px-1">
-          <span className="text-sm font-display font-semibold text-muted-foreground uppercase tracking-wider">
-            {isUser ? 'Sen' : 'Omega'}
-          </span>
-          {agentMode && !isUser && (
-            <AgentBadge mode={agentMode} />
-          )}
-          {createdAt && (
-            <span className="text-xs text-muted-foreground/50 font-mono opacity-0 group-hover:opacity-100 transition-opacity">
-              {format(new Date(createdAt), 'HH:mm')}
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className="text-sm font-semibold gemini-gradient">Omega</span>
+          {isStreaming && (
+            <span className="flex gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-accent animate-bounce" style={{ animationDelay: '150ms' }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-bounce" style={{ animationDelay: '300ms' }} />
             </span>
           )}
         </div>
 
-        <div className={cn(
-          "relative px-6 py-4 rounded-2xl shadow-xl",
-          isUser 
-            ? "bg-primary/10 border border-primary/20 text-foreground rounded-tr-sm" 
-            : "glass-panel rounded-tl-sm border-l-2 border-l-accent/50"
-        )}>
-          {isUser ? (
-            <div className="whitespace-pre-wrap text-[15px] leading-relaxed">
-              {content}
-            </div>
-          ) : (
+        {/* Image if present */}
+        {imageUrl && (
+          <div className="mb-3">
+            <img
+              src={imageUrl}
+              alt="Üretilen görsel"
+              className="rounded-2xl max-w-sm w-full shadow-xl border border-border/50"
+              loading="lazy"
+            />
+          </div>
+        )}
+
+        {/* Text content */}
+        {content && (
+          <div className="text-[15px] leading-relaxed">
             <MarkdownRenderer content={content} />
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

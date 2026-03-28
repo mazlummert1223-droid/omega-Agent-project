@@ -97,6 +97,31 @@ router.delete("/conversations/:id", async (req, res) => {
   res.status(204).send();
 });
 
+// Sadece mesaj kaydet — AI çalıştırma (resim mesajları için)
+router.post("/conversations/:id/save-message", async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { role, content } = req.body as { role: string; content: string };
+
+  if (!role || !content) {
+    res.status(400).json({ error: "role ve content zorunlu" });
+    return;
+  }
+
+  const [conv] = await db.select().from(conversations).where(eq(conversations.id, id));
+  if (!conv) {
+    res.status(404).json({ error: "Konuşma bulunamadı" });
+    return;
+  }
+
+  await db.insert(messages).values({
+    conversationId: id,
+    role: role as "user" | "assistant",
+    content,
+  });
+
+  res.status(201).json({ ok: true });
+});
+
 router.get("/conversations/:id/messages", async (req, res) => {
   const id = parseInt(req.params.id);
   const msgs = await db.select().from(messages).where(eq(messages.conversationId, id)).orderBy(messages.createdAt);

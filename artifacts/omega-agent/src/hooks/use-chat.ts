@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { getListOpenaiMessagesQueryKey, getListOpenaiConversationsQueryKey } from "@workspace/api-client-react";
+import { getListOpenaiMessagesQueryKey, getListOpenaiConversationsQueryKey, getGetOpenaiConversationQueryKey } from "@workspace/api-client-react";
 
 export type AgentMode = 'auto' | 'researcher' | 'coder' | 'designer' | 'multi';
 
@@ -11,20 +11,13 @@ export interface MultiTaskEvent {
   content?: string;
 }
 
-// Local-only message for images (not stored in DB separately)
-export interface LocalMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  imageUrl?: string;
-  createdAt: string;
-}
+// Image marker prefix — used to persist image URLs in DB message content
+export const IMG_MARKER = "__IMG__:";
 
 export function useChatStream(conversationId: number | null) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentStreamedText, setCurrentStreamedText] = useState("");
   const [multiTaskEvents, setMultiTaskEvents] = useState<MultiTaskEvent[]>([]);
-  const [localMessages, setLocalMessages] = useState<LocalMessage[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
   const queryClient = useQueryClient();
 
@@ -34,6 +27,13 @@ export function useChatStream(conversationId: number | null) {
     setIsStreaming(false);
   }, []);
 
+  const invalidateConversation = useCallback(() => {
+    if (!conversationId) return;
+    queryClient.invalidateQueries({ queryKey: getGetOpenaiConversationQueryKey(conversationId) });
+    queryClient.invalidateQueries({ queryKey: getListOpenaiMessagesQueryKey(conversationId) });
+    queryClient.invalidateQueries({ queryKey: getListOpenaiConversationsQueryKey() });
+  }, [conversationId, queryClient]);
+
   const sendMessage = useCallback(async (
     content: string,
     agentMode: AgentMode = 'auto',
@@ -41,34 +41,33 @@ export function useChatStream(conversationId: number | null) {
   ) => {
     if (!conversationId) return;
 
-    // If image was generated, add both user prompt and image response locally
+    // ── Image message path ────────────────────────────────────────────────
+    // Save user prompt + assistant image directly to DB without running AI.
     if (imageUrl) {
-      const userMsg: LocalMessage = {
-        id: `local-u-${Date.now()}`,
-        role: 'user',
-        content,
-        createdAt: new Date().toISOString(),
-      };
-      const assistantMsg: LocalMessage = {
-        id: `local-a-${Date.now()}`,
-        role: 'assistant',
-        content: `İşte "${content}" için üretilen görsel:`,
-        imageUrl,
-        createdAt: new Date().toISOString(),
-      };
-      setLocalMessages(prev => [...prev, userMsg, assistantMsg]);
-      // Also save to DB as text
       try {
-        await fetch(`/api/openai/conversations/${conversationId}/messages`, {
+        // Save user message
+        await fetch(`/api/openai/conversations/${conversationId}/save-message`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: `${content}\n\n[Görsel üretildi: ${imageUrl}]`, agentMode }),
+          body: JSON.stringify({ role: 'user', content }),
         });
-      } catch {}
-      queryClient.invalidateQueries({ queryKey: getListOpenaiConversationsQueryKey() });
+        // Save assistant image message using special marker so it persists
+        await fetch(`/api/openai/conversations/${conversationId}/save-message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            role: 'assistant',
+            content: `${IMG_MARKER}${imageUrl}`,
+          }),
+        });
+      } catch {
+        // Silently continue — images still show via query refetch
+      }
+      invalidateConversation();
       return;
     }
 
+    // ── Text / AI streaming path ──────────────────────────────────────────
     setIsStreaming(true);
     setCurrentStreamedText("");
     setMultiTaskEvents([]);
@@ -77,8 +76,12 @@ export function useChatStream(conversationId: number | null) {
 
     try {
       const isMulti = agentMode === 'multi';
-      const url = isMulti ? `/api/agent/multi-task` : `/api/openai/conversations/${conversationId}/messages`;
-      const body = isMulti ? { task: content, conversationId } : { content, agentMode };
+      const url = isMulti
+        ? `/api/agent/multi-task`
+        : `/api/openai/conversations/${conversationId}/messages`;
+      const body = isMulti
+        ? { task: content, conversationId }
+        : { content, agentMode };
 
       const response = await fetch(url, {
         method: "POST",
@@ -133,8 +136,7 @@ export function useChatStream(conversationId: number | null) {
         }
       }
 
-      queryClient.invalidateQueries({ queryKey: getListOpenaiMessagesQueryKey(conversationId) });
-      queryClient.invalidateQueries({ queryKey: getListOpenaiConversationsQueryKey() });
+      invalidateConversation();
     } catch (error: any) {
       if (error.name !== 'AbortError') {
         console.error('Stream error:', error);
@@ -144,7 +146,7 @@ export function useChatStream(conversationId: number | null) {
       setCurrentStreamedText("");
       setMultiTaskEvents([]);
     }
-  }, [conversationId, queryClient]);
+  }, [conversationId, invalidateConversation]);
 
-  return { sendMessage, isStreaming, currentStreamedText, multiTaskEvents, localMessages, stopStream };
+  return { sendMessage, isStreaming, currentStreamedText, multiTaskEvents, stopStream };
 }

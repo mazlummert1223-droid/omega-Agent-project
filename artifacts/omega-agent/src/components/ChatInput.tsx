@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Image as ImageIcon, Sparkles, Square, Mic, MicOff, Bot, Search, Code2, Paintbrush, Layers, ChevronUp } from 'lucide-react';
+import { Send, Image as ImageIcon, Sparkles, Square, Mic, MicOff, Bot, Search, Code2, Paintbrush, Layers, ChevronUp, Film } from 'lucide-react';
 import { AgentMode } from '@/hooks/use-chat';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -8,6 +8,7 @@ interface ChatInputProps {
   onSend: (message: string, mode: AgentMode, imageUrl?: string) => void;
   isStreaming: boolean;
   onStop: () => void;
+  onVideoGenerate?: (prompt: string) => void;
 }
 
 const MODES: { id: AgentMode; label: string; icon: React.ReactNode; desc: string }[] = [
@@ -28,7 +29,7 @@ const IMAGE_STYLES = [
 
 const IMAGE_KEYWORDS = ['resim', 'görsel', 'çiz', 'üret', 'fotoğraf', 'anime', 'pony', 'image', 'draw', 'generate'];
 
-export function ChatInput({ onSend, isStreaming, onStop }: ChatInputProps) {
+export function ChatInput({ onSend, isStreaming, onStop, onVideoGenerate }: ChatInputProps) {
   const [input, setInput] = useState('');
   const [mode, setMode] = useState<AgentMode>('auto');
   const [showModes, setShowModes] = useState(false);
@@ -239,6 +240,25 @@ export function ChatInput({ onSend, isStreaming, onStop }: ChatInputProps) {
             >
               {isListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
             </button>
+
+            {/* Video generate */}
+            {onVideoGenerate && (
+              <button
+                onClick={() => {
+                  if (input.trim()) {
+                    onVideoGenerate(input.trim());
+                    setInput('');
+                  } else {
+                    onVideoGenerate('');
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-pink-500/40 text-pink-400 hover:bg-pink-500/10 transition-all"
+                title="Video üret"
+              >
+                <Film className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Video</span>
+              </button>
+            )}
           </div>
 
           {/* Send / Stop button */}

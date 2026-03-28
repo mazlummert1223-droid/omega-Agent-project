@@ -1,10 +1,11 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'wouter';
 import { useGetOpenaiConversation } from '@workspace/api-client-react';
 import { useChatStream } from '@/hooks/use-chat';
 import { MessageBubble } from '@/components/MessageBubble';
 import { ChatInput } from '@/components/ChatInput';
 import { MultiTaskProgress } from '@/components/MultiTaskProgress';
+import { VideoGenerator } from '@/components/VideoGenerator';
 import { useSidebar } from '@/App';
 import { Loader2, AlertCircle, Menu } from 'lucide-react';
 
@@ -28,6 +29,7 @@ export default function ChatPage() {
   const convId = parseInt(id || '0', 10);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toggle } = useSidebar();
+  const [videoPrompt, setVideoPrompt] = useState<string | null>(null);
 
   const { data: conversation, isLoading, isError } = useGetOpenaiConversation(convId);
   const { sendMessage, isStreaming, currentStreamedText, multiTaskEvents, localMessages, stopStream } = useChatStream(convId);
@@ -171,8 +173,21 @@ export default function ChatPage() {
 
       {/* Input */}
       <div className="bg-gradient-to-t from-background via-background/95 to-transparent pt-6">
-        <ChatInput onSend={sendMessage} isStreaming={isStreaming} onStop={stopStream} />
+        <ChatInput
+          onSend={sendMessage}
+          isStreaming={isStreaming}
+          onStop={stopStream}
+          onVideoGenerate={(prompt) => setVideoPrompt(prompt)}
+        />
       </div>
+
+      {/* Video Generator Modal */}
+      {videoPrompt !== null && (
+        <VideoGenerator
+          prompt={videoPrompt}
+          onClose={() => setVideoPrompt(null)}
+        />
+      )}
     </div>
   );
 }

@@ -174,8 +174,9 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="px-4 py-3 border-t border-border/50">
-        <p className="text-[11px] text-muted-foreground/50 text-center">
-          Llama 405B · Qwen3 Coder · NVIDIA 120B
+        <p className="text-[11px] text-muted-foreground/50 text-center leading-relaxed">
+          Hermes 405B · Qwen3 80B · Llama 3.3 70B<br/>
+          Gemma 4 · Pollinations · DuckDuckGo
         </p>
       </div>
     </div>

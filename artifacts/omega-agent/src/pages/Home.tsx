@@ -22,14 +22,14 @@ function GeminiStar({ className }: { className?: string }) {
 }
 
 const SUGGESTIONS = [
-  { icon: "🔍", text: "Yapay zeka teknolojisini araştır", mode: "researcher" },
+  { icon: "🌐", text: "Web'den güncel bilgiyle araştırma yap", mode: "researcher" },
   { icon: "💻", text: "React ile todo app yaz", mode: "coder" },
   { icon: "🎨", text: "Modern bir landing page tasarla", mode: "designer" },
   { icon: "🤖", text: "Çok-ajan sistemi ile karmaşık görev çöz", mode: "multi" },
   { icon: "📊", text: "Python ile veri analizi kodu yaz", mode: "coder" },
-  { icon: "🌐", text: "Türkiye'nin teknoloji ekosistemine bak", mode: "researcher" },
-  { icon: "🖼️", text: "Anime stili bir karakter görseli üret", mode: "designer" },
-  { icon: "⚡", text: "Next.js vs Remix karşılaştır", mode: "researcher" },
+  { icon: "🔍", text: "Yapay zeka 2026'daki son gelişmeleri araştır", mode: "researcher" },
+  { icon: "🦄", text: "Pony stili sevimli bir at çiz", mode: "designer" },
+  { icon: "🌃", text: "Cyberpunk şehir manzarası üret", mode: "designer" },
 ];
 
 export default function Home() {

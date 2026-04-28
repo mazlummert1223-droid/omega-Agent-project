@@ -20,14 +20,17 @@ const MODES: { id: AgentMode; label: string; icon: React.ReactNode; desc: string
 ];
 
 const IMAGE_STYLES = [
-  { id: 'default', label: '🖼️ Gerçekçi' },
+  { id: 'default', label: '🖼️ Otomatik' },
+  { id: 'realistic', label: '📸 Gerçekçi' },
   { id: 'anime', label: '🎌 Anime' },
-  { id: 'pony', label: '🦄 Pony AI' },
+  { id: 'pony', label: '🦄 Pony' },
   { id: '3d', label: '🎮 3D' },
   { id: 'art', label: '🎨 Sanatsal' },
+  { id: 'cyberpunk', label: '🌃 Cyberpunk' },
+  { id: 'fantasy', label: '🧙 Fantastik' },
 ];
 
-const IMAGE_KEYWORDS = ['resim', 'görsel', 'çiz', 'üret', 'fotoğraf', 'anime', 'pony', 'image', 'draw', 'generate'];
+const IMAGE_KEYWORDS = ['resim', 'görsel', 'çiz', 'üret', 'fotoğraf', 'anime', 'pony', 'image', 'draw', 'generate', 'picture', 'photo'];
 
 export function ChatInput({ onSend, isStreaming, onStop, onVideoGenerate }: ChatInputProps) {
   const [input, setInput] = useState('');
@@ -48,8 +51,10 @@ export function ChatInput({ onSend, isStreaming, onStop, onVideoGenerate }: Chat
     }
   }, [input]);
 
-  // Detect image request
-  const isImageRequest = IMAGE_KEYWORDS.some(k => input.toLowerCase().includes(k));
+  // Detect image request — kelime varsa VEYA stil seçilmişse her zaman resim üret
+  const hasImageKeyword = IMAGE_KEYWORDS.some(k => input.toLowerCase().includes(k));
+  const hasStyleSelected = imageStyle !== 'default';
+  const isImageRequest = hasImageKeyword || hasStyleSelected;
 
   // Voice input
   const toggleVoice = () => {
@@ -109,7 +114,8 @@ export function ChatInput({ onSend, isStreaming, onStop, onVideoGenerate }: Chat
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim() || isStreaming || isGeneratingImage) return;
-    if (isImageRequest && (mode === 'auto' || mode === 'designer')) {
+    // Stil seçilmişse VEYA resim kelimesi varsa → her zaman resim üret (mode bağımsız)
+    if (isImageRequest) {
       generateAndSend();
       return;
     }
@@ -282,7 +288,7 @@ export function ChatInput({ onSend, isStreaming, onStop, onVideoGenerate }: Chat
                     : "bg-secondary text-muted-foreground/40 cursor-not-allowed"
                 )}
               >
-                {isImageRequest && (mode === 'auto' || mode === 'designer')
+                {isImageRequest
                   ? <Sparkles className="w-4 h-4" />
                   : <Send className="w-4 h-4 ml-0.5" />
                 }

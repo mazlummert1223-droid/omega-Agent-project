@@ -1,7 +1,8 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from './MarkdownRenderer';
-import { User } from 'lucide-react';
+import { Download } from 'lucide-react';
+import { IMG_MARKER } from '@/hooks/use-chat';
 
 // Gemini star for AI avatar
 function GeminiStar() {
@@ -23,12 +24,20 @@ interface MessageBubbleProps {
   role: 'user' | 'assistant';
   content: string;
   createdAt?: string;
-  imageUrl?: string;
   isStreaming?: boolean;
 }
 
-export function MessageBubble({ role, content, createdAt, imageUrl, isStreaming }: MessageBubbleProps) {
+// Detect image marker in content and extract URL
+function parseImageContent(content: string): { imageUrl: string | null; text: string } {
+  if (content?.startsWith(IMG_MARKER)) {
+    return { imageUrl: content.slice(IMG_MARKER.length).trim(), text: '' };
+  }
+  return { imageUrl: null, text: content };
+}
+
+export function MessageBubble({ role, content, isStreaming }: MessageBubbleProps) {
   const isUser = role === 'user';
+  const { imageUrl, text } = parseImageContent(content);
 
   if (isUser) {
     return (
@@ -62,22 +71,32 @@ export function MessageBubble({ role, content, createdAt, imageUrl, isStreaming 
           )}
         </div>
 
-        {/* Image if present */}
+        {/* Image (from marker) */}
         {imageUrl && (
-          <div className="mb-3">
+          <div className="mb-3 group relative inline-block">
             <img
               src={imageUrl}
               alt="Üretilen görsel"
-              className="rounded-2xl max-w-sm w-full shadow-xl border border-border/50"
+              className="rounded-2xl max-w-md w-full shadow-xl border border-border/50"
               loading="lazy"
             />
+            <a
+              href={imageUrl}
+              download
+              target="_blank"
+              rel="noopener noreferrer"
+              className="absolute top-2 right-2 p-2 rounded-full bg-black/60 backdrop-blur-md border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80"
+              title="İndir"
+            >
+              <Download className="w-4 h-4 text-white" />
+            </a>
           </div>
         )}
 
         {/* Text content */}
-        {content && (
+        {text && (
           <div className="text-[15px] leading-relaxed">
-            <MarkdownRenderer content={content} />
+            <MarkdownRenderer content={text} />
           </div>
         )}
       </div>

@@ -8,7 +8,12 @@ import ChatPage from "@/pages/Chat";
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { refetchOnWindowFocus: false, retry: false },
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 2,
+      retryDelay: (attempt) => Math.min(500 * 2 ** attempt, 3000),
+      staleTime: 0,
+    },
   },
 });
 

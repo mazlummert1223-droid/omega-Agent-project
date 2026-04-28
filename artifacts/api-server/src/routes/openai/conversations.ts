@@ -119,6 +119,14 @@ router.post("/conversations/:id/save-message", async (req, res) => {
     content,
   });
 
+  // Auto-rename if user message and conversation still has default title
+  if (role === "user" && (!conv.title || conv.title === "Yeni Sohbet")) {
+    const newTitle = content.slice(0, 60).replace(/\n/g, " ").trim();
+    if (newTitle) {
+      await db.update(conversations).set({ title: newTitle }).where(eq(conversations.id, id));
+    }
+  }
+
   res.status(201).json({ ok: true });
 });
 
@@ -137,6 +145,14 @@ router.post("/conversations/:id/messages", async (req, res) => {
   if (!conv) { res.status(404).json({ error: "Konuşma bulunamadı" }); return; }
 
   await db.insert(messages).values({ conversationId: id, role: "user", content: body.content });
+
+  // Auto-rename "Yeni Sohbet" using first user message
+  if (!conv.title || conv.title === "Yeni Sohbet") {
+    const newTitle = body.content.slice(0, 60).replace(/\n/g, " ").trim();
+    if (newTitle) {
+      await db.update(conversations).set({ title: newTitle }).where(eq(conversations.id, id));
+    }
+  }
 
   const history = await db.select().from(messages)
     .where(eq(messages.conversationId, id))

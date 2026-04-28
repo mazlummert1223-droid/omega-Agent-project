@@ -31,8 +31,10 @@ export default function ChatPage() {
   const { toggle } = useSidebar();
   const [videoPrompt, setVideoPrompt] = useState<string | null>(null);
 
-  const { data: conversation, isLoading, isError } = useGetOpenaiConversation(convId);
-  const { sendMessage, isStreaming, currentStreamedText, multiTaskEvents, localMessages, stopStream } = useChatStream(convId);
+  const { data: conversation, isLoading, isError, refetch } = useGetOpenaiConversation(convId, {
+    query: { retry: 3, retryDelay: 600 },
+  });
+  const { sendMessage, isStreaming, currentStreamedText, multiTaskEvents, stopStream } = useChatStream(convId);
 
   // Check for initial prompt from Home page suggestion click
   useEffect(() => {
@@ -54,7 +56,7 @@ export default function ChatPage() {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
     }
-  }, [conversation?.messages, currentStreamedText, multiTaskEvents, localMessages]);
+  }, [conversation?.messages, currentStreamedText, multiTaskEvents]);
 
   if (isLoading) {
     return (
@@ -69,26 +71,33 @@ export default function ChatPage() {
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="bg-card border border-border rounded-2xl p-8 flex flex-col items-center gap-3 text-center max-w-sm">
           <AlertCircle className="w-10 h-10 text-destructive" />
-          <h2 className="font-semibold text-lg">Sohbet Bulunamadı</h2>
-          <p className="text-muted-foreground text-sm">Bu sohbet silinmiş veya erişilemiyor olabilir.</p>
-          <a href="/" className="text-primary text-sm hover:underline">Ana Sayfaya Dön</a>
+          <h2 className="font-semibold text-lg">Sohbet Yüklenemedi</h2>
+          <p className="text-muted-foreground text-sm">Bağlantı sorunu olabilir. Tekrar deneyebilir veya ana sayfaya dönebilirsin.</p>
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={() => refetch()}
+              className="px-4 py-2 rounded-full bg-primary hover:bg-primary/90 text-white text-sm font-medium"
+            >
+              Tekrar Dene
+            </button>
+            <a
+              href="/"
+              className="px-4 py-2 rounded-full bg-secondary hover:bg-secondary/80 text-foreground text-sm font-medium"
+            >
+              Ana Sayfa
+            </a>
+          </div>
         </div>
       </div>
     );
   }
 
-  const dbMessages = conversation.messages || [];
-
-  // Merge DB messages with local (image) messages, sorted by time
-  const allMessages = [...dbMessages.map(m => ({
+  const allMessages = (conversation.messages || []).map(m => ({
     id: String(m.id),
     role: m.role as 'user' | 'assistant',
     content: m.content,
-    imageUrl: undefined,
     createdAt: m.createdAt,
-  })), ...localMessages].sort((a, b) =>
-    new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-  );
+  }));
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
@@ -133,7 +142,6 @@ export default function ChatPage() {
                 role={msg.role}
                 content={msg.content}
                 createdAt={msg.createdAt}
-                imageUrl={msg.imageUrl}
               />
             ))
           )}

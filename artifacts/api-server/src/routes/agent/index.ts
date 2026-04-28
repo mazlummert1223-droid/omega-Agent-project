@@ -4,20 +4,34 @@ import { db } from "@workspace/db";
 import { messages } from "@workspace/db";
 import { AgentWebSearchBody, AgentMultiTaskBody } from "@workspace/api-zod";
 
-const MODELS = {
-  primary: "arcee-ai/trinity-large-preview:free",
-  secondary: "z-ai/glm-4.5-air:free",
-  fallback: "meta-llama/llama-3.3-70b-instruct:free",
-  coder: "qwen/qwen3-coder:free",
-};
+// Doğrulanmış çalışan ücretsiz modeller (Nisan 2026)
+const FALLBACK_MODELS = [
+  "nousresearch/hermes-3-llama-3.1-405b:free",
+  "qwen/qwen3-next-80b-a3b-instruct:free",
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "google/gemma-4-31b-it:free",
+  "google/gemma-4-26b-a4b-it:free",
+  "z-ai/glm-4.5-air:free",
+  "inclusionai/ling-2.6-1t:free",
+  "tencent/hy3-preview:free",
+  "meta-llama/llama-3.2-3b-instruct:free",
+  "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+];
+
+const CODER_MODELS = [
+  "qwen/qwen3-coder:free",
+  "qwen/qwen3-next-80b-a3b-instruct:free",
+  "nousresearch/hermes-3-llama-3.1-405b:free",
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "tencent/hy3-preview:free",
+];
 
 async function sleep(ms: number) {
   return new Promise(r => setTimeout(r, ms));
 }
 
 async function callModel(systemPrompt: string, userPrompt: string): Promise<string> {
-  const models = [MODELS.primary, MODELS.secondary, MODELS.fallback];
-  for (const model of models) {
+  for (const model of FALLBACK_MODELS) {
     try {
       const res = await openrouter.chat.completions.create({
         model,
@@ -29,8 +43,9 @@ async function callModel(systemPrompt: string, userPrompt: string): Promise<stri
       });
       const c = res.choices[0]?.message?.content || "";
       if (c) return c;
-    } catch {
-      await sleep(800);
+    } catch (e: any) {
+      console.error(`[Agent] Failed ${model}:`, e?.message || e);
+      await sleep(400);
       continue;
     }
   }
@@ -75,19 +90,19 @@ router.post("/multi-task", async (req, res) => {
     {
       name: "researcher",
       label: "🔍 Araştırmacı Agent",
-      model: MODELS.primary,
+      models: FALLBACK_MODELS,
       system: `Sen bir araştırma uzmanısın. Görev hakkında kapsamlı araştırma ve detaylı bilgi sunarsın. Her zaman Türkçe yaz.`,
     },
     {
       name: "coder",
       label: "💻 Kodcu Agent",
-      model: MODELS.coder,
+      models: CODER_MODELS,
       system: `Sen bir yazılım mühendisisin. Görev için tam ve çalışır kod yazarsın. Türkçe açıklamalarla markdown kod blokları kullan.`,
     },
     {
       name: "designer",
       label: "🎨 Tasarımcı Agent",
-      model: MODELS.secondary,
+      models: FALLBACK_MODELS,
       system: `Sen bir UI/UX tasarım uzmanısın. Görev için tasarım önerileri, HTML/CSS ve görsel çözümler sunarsın. Türkçe yaz.`,
     },
   ];
@@ -98,13 +113,10 @@ router.post("/multi-task", async (req, res) => {
     send({ agent: agent.name, label: agent.label, status: "running" });
 
     let agentContent = "";
-    const agentModels = agent.name === "coder"
-      ? [MODELS.coder, MODELS.primary, MODELS.secondary]
-      : [agent.model, MODELS.primary, MODELS.secondary];
-
     let streamed = false;
-    for (const model of agentModels) {
+    for (const model of agent.models) {
       try {
+        console.log(`[MultiAgent/${agent.name}] Trying ${model}`);
         const stream = await openrouter.chat.completions.create({
           model,
           max_tokens: 4096,
@@ -123,15 +135,20 @@ router.post("/multi-task", async (req, res) => {
           }
         }
 
-        if (agentContent) { streamed = true; break; }
-      } catch {
-        await sleep(500);
+        if (agentContent) {
+          console.log(`[MultiAgent/${agent.name}] Success ${model} (${agentContent.length} chars)`);
+          streamed = true;
+          break;
+        }
+      } catch (e: any) {
+        console.error(`[MultiAgent/${agent.name}] Failed ${model}:`, e?.message || e);
+        await sleep(400);
         continue;
       }
     }
 
     if (!streamed) {
-      agentContent = "Bu ajan şu an yanıt veremiyor.";
+      agentContent = "Bu ajan şu an yanıt veremiyor (tüm modeller meşgul).";
       send({ agent: agent.name, label: agent.label, content: agentContent, status: "streaming" });
     }
 

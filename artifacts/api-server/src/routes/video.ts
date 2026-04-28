@@ -1,11 +1,16 @@
 import { Router, type IRouter } from "express";
 import { openrouter } from "@workspace/integrations-openrouter-ai";
 
-const MODELS = {
-  primary: "arcee-ai/trinity-large-preview:free",
-  secondary: "z-ai/glm-4.5-air:free",
-  fallback: "meta-llama/llama-3.3-70b-instruct:free",
-};
+// Doğrulanmış çalışan ücretsiz modeller (Nisan 2026)
+const VIDEO_MODELS = [
+  "nousresearch/hermes-3-llama-3.1-405b:free",
+  "qwen/qwen3-next-80b-a3b-instruct:free",
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "google/gemma-4-31b-it:free",
+  "z-ai/glm-4.5-air:free",
+  "tencent/hy3-preview:free",
+  "meta-llama/llama-3.2-3b-instruct:free",
+];
 
 async function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
 
@@ -49,10 +54,10 @@ SADECE geçerli JSON döndür:
 }`;
 
   let scriptContent = "";
-  const models = [MODELS.primary, MODELS.secondary, MODELS.fallback];
 
-  for (const model of models) {
+  for (const model of VIDEO_MODELS) {
     try {
+      console.log(`[Video] Trying ${model}`);
       const response = await openrouter.chat.completions.create({
         model,
         max_tokens: 8192,
@@ -62,9 +67,13 @@ SADECE geçerli JSON döndür:
         ],
       });
       scriptContent = response.choices[0]?.message?.content || "";
-      if (scriptContent) break;
-    } catch {
-      await sleep(500);
+      if (scriptContent) {
+        console.log(`[Video] Success ${model} (${scriptContent.length} chars)`);
+        break;
+      }
+    } catch (e: any) {
+      console.error(`[Video] Failed ${model}:`, e?.message || e);
+      await sleep(400);
       continue;
     }
   }

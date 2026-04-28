@@ -46,6 +46,10 @@ export default function Home() {
             sessionStorage.setItem(`chat_${data.id}_init`, JSON.stringify({ prompt, mode: _mode || 'auto' }));
           }
           setLocation(`/chat/${data.id}`);
+        },
+        onError: (err) => {
+          console.error('[Home/NewChat]', err);
+          alert('Sohbet başlatılamadı. Lütfen tekrar deneyin.');
         }
       }
     );

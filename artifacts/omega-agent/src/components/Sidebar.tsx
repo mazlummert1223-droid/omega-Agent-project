@@ -41,11 +41,18 @@ export function Sidebar() {
       { data: { title: "Yeni Sohbet" } },
       {
         onSuccess: (data) => {
-          queryClient.invalidateQueries({ queryKey: getListOpenaiConversationsQueryKey() });
+          // Önce navigasyon yap, sonra refetch ve sidebar kapat
+          // (aynı anda 3 state güncellemesi DOM hatasına yol açıyordu)
           setLocation(`/chat/${data.id}`);
-          close();
+          setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: getListOpenaiConversationsQueryKey() });
+            close();
+          }, 0);
         },
-        onError: () => toast.error('Sohbet oluşturulamadı')
+        onError: (err) => {
+          console.error('[NewChat]', err);
+          toast.error('Sohbet oluşturulamadı');
+        }
       }
     );
   };

@@ -54,6 +54,7 @@ export function VideoGenerator({ prompt: initialPrompt, onClose }: VideoGenerato
   const [currentFrame, setCurrentFrame] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const playIntervalRef = useRef<any>(null);
 
   const generate = async () => {
@@ -61,6 +62,7 @@ export function VideoGenerator({ prompt: initialPrompt, onClose }: VideoGenerato
     setIsGenerating(true);
     setVideoData(null);
     setScenes([]);
+    setVideoUrl(null);
     setCurrentFrame(0);
     setProgress(0);
     setStatus('Script oluşturuluyor...');
@@ -105,9 +107,17 @@ export function VideoGenerator({ prompt: initialPrompt, onClose }: VideoGenerato
                   return [...prev, newScene];
                 });
               }
+            } else if (data.step === 'rendering') {
+              setStatus(data.message || 'Video birleştiriliyor...');
+              setProgress(95);
             } else if (data.step === 'complete') {
               setProgress(100);
-              setStatus('Video hazır!');
+              if (data.videoUrl) {
+                setVideoUrl(data.videoUrl);
+                setStatus('Video hazır! ▶️');
+              } else {
+                setStatus('Sahneler hazır (MP4 üretilemedi, sadece görsel oynatma)');
+              }
               setIsGenerating(false);
             } else if (data.error) {
               setStatus('Hata: ' + data.error);
@@ -249,39 +259,66 @@ export function VideoGenerator({ prompt: initialPrompt, onClose }: VideoGenerato
               {/* Video player */}
               <div className="lg:w-7/12 p-4 space-y-3">
                 <div className="aspect-video bg-black rounded-2xl overflow-hidden relative border border-border">
-                  {scenes[currentFrame]?.imageUrl ? (
+                  {videoUrl ? (
+                    /* Gerçek MP4 video oynatıcı */
+                    <video
+                      src={videoUrl}
+                      controls
+                      autoPlay
+                      loop
+                      className="w-full h-full object-contain bg-black"
+                    />
+                  ) : scenes[currentFrame]?.imageUrl ? (
                     <img src={scenes[currentFrame].imageUrl} alt={scenes[currentFrame].title} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
                     </div>
                   )}
-                  {/* Overlay info */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                    <p className="text-white text-sm font-medium">{scenes[currentFrame]?.title}</p>
-                    <p className="text-white/70 text-xs mt-0.5 line-clamp-2">{scenes[currentFrame]?.narration}</p>
-                  </div>
-                  {/* Frame counter */}
-                  <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm rounded-full px-2.5 py-1 text-xs text-white font-mono">
-                    {currentFrame + 1} / {scenes.length}
-                  </div>
+                  {!videoUrl && (
+                    <>
+                      {/* Overlay info */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                        <p className="text-white text-sm font-medium">{scenes[currentFrame]?.title}</p>
+                        <p className="text-white/70 text-xs mt-0.5 line-clamp-2">{scenes[currentFrame]?.narration}</p>
+                      </div>
+                      {/* Frame counter */}
+                      <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm rounded-full px-2.5 py-1 text-xs text-white font-mono">
+                        {currentFrame + 1} / {scenes.length}
+                      </div>
+                    </>
+                  )}
                 </div>
 
-                {/* Controls */}
-                <div className="flex items-center gap-2">
-                  <button onClick={() => setCurrentFrame(Math.max(0, currentFrame - 1))} disabled={currentFrame === 0} className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-white disabled:opacity-30 transition-colors">
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <button onClick={togglePlay} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full bg-primary hover:bg-primary/90 text-white text-sm font-medium transition-colors">
-                    {isPlaying ? <><Pause className="w-4 h-4" />Durdur</> : <><Play className="w-4 h-4" />Oynat</>}
-                  </button>
-                  <button onClick={() => setCurrentFrame(Math.min(scenes.length - 1, currentFrame + 1))} disabled={currentFrame >= scenes.length - 1} className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-white disabled:opacity-30 transition-colors">
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                  <button onClick={downloadScript} className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-white transition-colors" title="Script indir">
-                    <Download className="w-5 h-5" />
-                  </button>
-                </div>
+                {/* Video MP4 yüklendiyse indirme butonu */}
+                {videoUrl && (
+                  <a
+                    href={videoUrl}
+                    download="omega-video.mp4"
+                    className="flex items-center justify-center gap-2 w-full py-2.5 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white text-sm font-medium transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    MP4 Olarak İndir
+                  </a>
+                )}
+
+                {/* Controls (sadece MP4 yokken) */}
+                {!videoUrl && (
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setCurrentFrame(Math.max(0, currentFrame - 1))} disabled={currentFrame === 0} className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-white disabled:opacity-30 transition-colors">
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button onClick={togglePlay} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full bg-primary hover:bg-primary/90 text-white text-sm font-medium transition-colors">
+                      {isPlaying ? <><Pause className="w-4 h-4" />Durdur</> : <><Play className="w-4 h-4" />Oynat</>}
+                    </button>
+                    <button onClick={() => setCurrentFrame(Math.min(scenes.length - 1, currentFrame + 1))} disabled={currentFrame >= scenes.length - 1} className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-white disabled:opacity-30 transition-colors">
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                    <button onClick={downloadScript} className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-white transition-colors" title="Script indir">
+                      <Download className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
 
                 {/* Progress bar */}
                 {isGenerating && (

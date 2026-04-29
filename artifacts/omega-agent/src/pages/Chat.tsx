@@ -30,11 +30,35 @@ export default function ChatPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toggle } = useSidebar();
   const [videoPrompt, setVideoPrompt] = useState<string | null>(null);
+  const [pendingImage, setPendingImage] = useState<{ prompt: string; style: string } | null>(null);
 
   const { data: conversation, isLoading, isError, refetch } = useGetOpenaiConversation(convId, {
     query: { retry: 3, retryDelay: 600 },
   });
   const { sendMessage, isStreaming, currentStreamedText, multiTaskEvents, stopStream } = useChatStream(convId);
+
+  // Resim üretme handler - önce yer tutucu göster, sonra üret
+  const handleImageGenerate = async (prompt: string, style: string) => {
+    setPendingImage({ prompt, style });
+    try {
+      const response = await fetch('/api/openai/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, style }),
+      });
+      const data = await response.json();
+      if (data.url) {
+        await sendMessage(prompt, 'auto', data.url);
+      } else {
+        throw new Error('no url');
+      }
+    } catch {
+      // Hata - sadece düz mesaj gönder
+      await sendMessage(prompt, 'auto');
+    } finally {
+      setPendingImage(null);
+    }
+  };
 
   // Check for initial prompt from Home page suggestion click
   useEffect(() => {
@@ -151,6 +175,46 @@ export default function ChatPage() {
             <MultiTaskProgress events={multiTaskEvents} />
           )}
 
+          {/* Resim üretme yer tutucusu - kullanıcı msg + animasyonlu kart */}
+          {pendingImage && (
+            <>
+              <MessageBubble
+                role="user"
+                content={pendingImage.prompt}
+              />
+              <div className="flex gap-3 px-4 md:px-8 py-3 animate-fade-up">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-500/30 to-purple-500/30 border border-pink-500/30 flex items-center justify-center flex-shrink-0">
+                  <GeminiStar />
+                </div>
+                <div className="flex-1 max-w-md">
+                  <div className="relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-pink-500/10 via-purple-500/10 to-blue-500/10 border border-purple-500/20">
+                    {/* Animasyonlu shimmer overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+                    {/* Pulse circles */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="relative">
+                        <div className="absolute inset-0 rounded-full bg-pink-500/30 animate-ping" />
+                        <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center shadow-lg">
+                          <svg className="w-8 h-8 text-white animate-pulse" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Bottom label */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
+                      <div className="flex items-center gap-2 text-white text-xs">
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse" />
+                        <span className="font-medium">Pollinations.AI ({pendingImage.style}) çiziyor…</span>
+                      </div>
+                      <p className="text-white/80 text-xs mt-1 line-clamp-1">{pendingImage.prompt}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
           {/* Regular text stream */}
           {isStreaming && currentStreamedText && (
             <MessageBubble
@@ -186,6 +250,8 @@ export default function ChatPage() {
           isStreaming={isStreaming}
           onStop={stopStream}
           onVideoGenerate={(prompt) => setVideoPrompt(prompt)}
+          onImageGenerate={handleImageGenerate}
+          isGeneratingImage={pendingImage !== null}
         />
       </div>
 

@@ -9,6 +9,8 @@ interface ChatInputProps {
   isStreaming: boolean;
   onStop: () => void;
   onVideoGenerate?: (prompt: string) => void;
+  onImageGenerate?: (prompt: string, style: string) => void;
+  isGeneratingImage?: boolean;
 }
 
 const MODES: { id: AgentMode; label: string; icon: React.ReactNode; desc: string }[] = [
@@ -32,13 +34,14 @@ const IMAGE_STYLES = [
 
 const IMAGE_KEYWORDS = ['resim', 'görsel', 'çiz', 'üret', 'fotoğraf', 'anime', 'pony', 'image', 'draw', 'generate', 'picture', 'photo'];
 
-export function ChatInput({ onSend, isStreaming, onStop, onVideoGenerate }: ChatInputProps) {
+export function ChatInput({ onSend, isStreaming, onStop, onVideoGenerate, onImageGenerate, isGeneratingImage: externalGenerating }: ChatInputProps) {
   const [input, setInput] = useState('');
   const [mode, setMode] = useState<AgentMode>('auto');
   const [showModes, setShowModes] = useState(false);
   const [showImageStyles, setShowImageStyles] = useState(false);
   const [imageStyle, setImageStyle] = useState('default');
-  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [internalGenerating, setInternalGenerating] = useState(false);
+  const isGeneratingImage = externalGenerating ?? internalGenerating;
   const [isListening, setIsListening] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -86,28 +89,29 @@ export function ChatInput({ onSend, isStreaming, onStop, onVideoGenerate }: Chat
 
   const generateAndSend = async () => {
     if (!input.trim()) return;
-    setIsGeneratingImage(true);
-    toast.info('Görsel üretiliyor... 🎨');
-
+    const text = input.trim();
+    setInput('');
+    if (onImageGenerate) {
+      // Parent yer tutucu animasyonunu yönetir
+      onImageGenerate(text, imageStyle);
+      return;
+    }
+    // Fallback: parent yoksa eski akış
+    setInternalGenerating(true);
     try {
       const response = await fetch('/api/openai/generate-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: input.trim(), style: imageStyle }),
+        body: JSON.stringify({ prompt: text, style: imageStyle }),
       });
       const data = await response.json();
-      if (data.url) {
-        onSend(input.trim(), mode, data.url);
-        toast.success('Görsel üretildi!');
-      } else {
-        throw new Error('no url');
-      }
+      if (data.url) onSend(text, mode, data.url);
+      else throw new Error('no url');
     } catch {
-      toast.error('Görsel üretilemedi, düz mesaj olarak gönderiliyor...');
-      onSend(input.trim(), mode);
+      toast.error('Görsel üretilemedi');
+      onSend(text, mode);
     } finally {
-      setIsGeneratingImage(false);
-      setInput('');
+      setInternalGenerating(false);
     }
   };
 

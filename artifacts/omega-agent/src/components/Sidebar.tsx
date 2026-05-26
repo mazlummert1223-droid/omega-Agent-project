@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useListOpenaiConversations, useCreateOpenaiConversation, useDeleteOpenaiConversation, getListOpenaiConversationsQueryKey } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { MessageSquare, Plus, Trash2, Loader2, PenSquare, X } from 'lucide-react';
+import { MessageSquare, Plus, Trash2, Loader2, PenSquare, X, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Link, useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { useSidebar } from '@/App';
+import { lockSession } from '@/lib/security';
 
 // Gemini-style star SVG
 function GeminiStar({ className }: { className?: string }) {
@@ -180,7 +181,18 @@ export function Sidebar() {
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-3 border-t border-border/50">
+      <div className="px-4 py-3 border-t border-border/50 space-y-2">
+        <button
+          onClick={() => {
+            lockSession();
+            window.location.reload();
+          }}
+          className="w-full flex items-center justify-center gap-2 text-muted-foreground/60 hover:text-white hover:bg-secondary/50 transition-colors text-xs py-1.5 rounded-lg"
+          title="Oturumu kilitle"
+        >
+          <Lock className="w-3 h-3" />
+          <span>Oturumu Kilitle</span>
+        </button>
         <p className="text-[11px] text-muted-foreground/50 text-center leading-relaxed">
           Hermes 405B · Qwen3 80B · Llama 3.3 70B<br/>
           Gemma 4 · Pollinations · DuckDuckGo

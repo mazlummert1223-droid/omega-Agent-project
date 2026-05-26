@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { Sidebar } from "@/components/Sidebar";
 import Home from "@/pages/Home";
 import ChatPage from "@/pages/Chat";
+import { SecurityGuard } from "@/components/SecurityGuard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -84,7 +85,9 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-        <Router />
+        <SecurityGuard>
+          <Router />
+        </SecurityGuard>
       </WouterRouter>
       <Toaster
         theme="dark"

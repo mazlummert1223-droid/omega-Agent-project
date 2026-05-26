@@ -3,6 +3,7 @@ import { Send, Image as ImageIcon, Sparkles, Square, Mic, MicOff, Bot, Search, C
 import { AgentMode } from '@/hooks/use-chat';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { checkSuspicious, recordRequest, recordBlocked, speakAlert } from '@/lib/security';
 
 interface ChatInputProps {
   onSend: (message: string, mode: AgentMode, imageUrl?: string) => void;
@@ -118,6 +119,18 @@ export function ChatInput({ onSend, isStreaming, onStop, onVideoGenerate, onImag
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim() || isStreaming || isGeneratingImage) return;
+
+    // Şüpheli aktivite kontrolü
+    const { ok, reason } = checkSuspicious(input.trim());
+    if (!ok) {
+      recordBlocked();
+      speakAlert('Şüpheli aktivite tespit edildi');
+      toast.error(`🛡️ Güvenlik Uyarısı: ${reason}`, { duration: 6000 });
+      return;
+    }
+
+    recordRequest();
+
     // Stil seçilmişse VEYA resim kelimesi varsa → her zaman resim üret (mode bağımsız)
     if (isImageRequest) {
       generateAndSend();

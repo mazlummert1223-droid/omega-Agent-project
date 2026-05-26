@@ -5,6 +5,7 @@ import agentRouter from "./agent/index";
 import videoRouter from "./video";
 import searchRouter from "./search";
 import ltxRouter from "./ltx";
+import securityRouter from "./security";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use("/agent", agentRouter);
 router.use("/video", videoRouter);
 router.use("/search", searchRouter);
 router.use("/ltx", ltxRouter);
+router.use("/security", securityRouter);
 
 export default router;

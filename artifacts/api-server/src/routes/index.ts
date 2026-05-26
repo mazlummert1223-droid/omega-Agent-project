@@ -6,6 +6,7 @@ import videoRouter from "./video";
 import searchRouter from "./search";
 import ltxRouter from "./ltx";
 import securityRouter from "./security";
+import filesRouter from "./files";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use("/video", videoRouter);
 router.use("/search", searchRouter);
 router.use("/ltx", ltxRouter);
 router.use("/security", securityRouter);
+router.use("/files", filesRouter);
 
 export default router;

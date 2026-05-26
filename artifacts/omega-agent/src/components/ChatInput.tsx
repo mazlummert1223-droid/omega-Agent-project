@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Image as ImageIcon, Sparkles, Square, Mic, MicOff, Bot, Search, Code2, Paintbrush, Layers, ChevronUp, Film } from 'lucide-react';
+import { Send, Image as ImageIcon, Sparkles, Square, Mic, MicOff, Bot, Search, Code2, Paintbrush, Layers, ChevronUp, Film, Paperclip } from 'lucide-react';
 import { AgentMode } from '@/hooks/use-chat';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { checkSuspicious, recordRequest, recordBlocked, speakAlert } from '@/lib/security';
+import { FileUploadPanel, FileCard, type ParsedFile } from './FileUploadPanel';
 
 interface ChatInputProps {
   onSend: (message: string, mode: AgentMode, imageUrl?: string) => void;
@@ -40,6 +41,8 @@ export function ChatInput({ onSend, isStreaming, onStop, onVideoGenerate, onImag
   const [mode, setMode] = useState<AgentMode>('auto');
   const [showModes, setShowModes] = useState(false);
   const [showImageStyles, setShowImageStyles] = useState(false);
+  const [showFilePanel, setShowFilePanel] = useState(false);
+  const [attachedFile, setAttachedFile] = useState<ParsedFile | null>(null);
   const [imageStyle, setImageStyle] = useState('default');
   const [internalGenerating, setInternalGenerating] = useState(false);
   const isGeneratingImage = externalGenerating ?? internalGenerating;
@@ -116,9 +119,31 @@ export function ChatInput({ onSend, isStreaming, onStop, onVideoGenerate, onImag
     }
   };
 
+  // Build full message with optional file context prepended
+  const buildMessageWithFile = (text: string): string => {
+    if (!attachedFile) return text;
+    const meta = [
+      attachedFile.pages && `${attachedFile.pages} sayfa`,
+      attachedFile.slides && `${attachedFile.slides} slayt`,
+      attachedFile.sheets && `${attachedFile.sheets.length} çalışma sayfası`,
+      `${attachedFile.size} KB`,
+    ].filter(Boolean).join(' · ');
+
+    const fileContext = `[DOSYA: ${attachedFile.name} | ${attachedFile.type}${meta ? ' | ' + meta : ''}]
+İçerik:
+${attachedFile.text.substring(0, 60_000)}
+---
+Kullanıcı sorusu: ${text}`;
+    return fileContext;
+  };
+
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!input.trim() || isStreaming || isGeneratingImage) return;
+    if ((!input.trim() && !attachedFile) || isStreaming || isGeneratingImage) return;
+    if (!input.trim() && attachedFile) {
+      toast.info('Lütfen dosya hakkında bir soru yazın');
+      return;
+    }
 
     // Şüpheli aktivite kontrolü
     const { ok, reason } = checkSuspicious(input.trim());
@@ -132,13 +157,16 @@ export function ChatInput({ onSend, isStreaming, onStop, onVideoGenerate, onImag
     recordRequest();
 
     // Stil seçilmişse VEYA resim kelimesi varsa → her zaman resim üret (mode bağımsız)
-    if (isImageRequest) {
+    if (isImageRequest && !attachedFile) {
       generateAndSend();
       return;
     }
-    onSend(input.trim(), mode);
+
+    const finalMessage = buildMessageWithFile(input.trim());
+    onSend(finalMessage, mode);
     setInput('');
     setShowModes(false);
+    setAttachedFile(null);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -150,8 +178,35 @@ export function ChatInput({ onSend, isStreaming, onStop, onVideoGenerate, onImag
 
   const activeMode = MODES.find(m => m.id === mode) || MODES[0];
 
+  const handleQuickAction = (prompt: string) => {
+    setInput(prompt);
+    setTimeout(() => textareaRef.current?.focus(), 50);
+  };
+
   return (
     <div className="w-full max-w-3xl mx-auto px-3 pb-5 pt-2 relative">
+      {/* File Upload Panel */}
+      {showFilePanel && (
+        <FileUploadPanel
+          onClose={() => setShowFilePanel(false)}
+          onFileParsed={(file) => {
+            setAttachedFile(file);
+            setShowFilePanel(false);
+            toast.success(`📄 ${file.name} okundu`, { duration: 3000 });
+            setTimeout(() => textareaRef.current?.focus(), 100);
+          }}
+        />
+      )}
+
+      {/* Attached File Card */}
+      {attachedFile && !showFilePanel && (
+        <FileCard
+          file={attachedFile}
+          onRemove={() => setAttachedFile(null)}
+          onQuickAction={handleQuickAction}
+        />
+      )}
+
       {/* Mode Selector Panel */}
       {showModes && (
         <div className="absolute bottom-full mb-2 left-3 right-3 bg-card border border-border rounded-2xl p-2 shadow-2xl z-50 animate-fade-up">
@@ -262,6 +317,23 @@ export function ChatInput({ onSend, isStreaming, onStop, onVideoGenerate, onImag
               title={isListening ? "Durdur" : "Sesle yaz"}
             >
               {isListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+            </button>
+
+            {/* File upload */}
+            <button
+              onClick={() => { setShowFilePanel(!showFilePanel); setShowModes(false); setShowImageStyles(false); }}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
+                attachedFile
+                  ? "border-emerald-500/50 text-emerald-400 bg-emerald-500/10"
+                  : showFilePanel
+                    ? "bg-primary/20 border-primary text-white"
+                    : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-white"
+              )}
+              title="Dosya yükle"
+            >
+              <Paperclip className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{attachedFile ? '📄 Eklendi' : 'Dosya'}</span>
             </button>
 
             {/* Video generate */}

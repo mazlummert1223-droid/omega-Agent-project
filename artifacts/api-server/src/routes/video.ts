@@ -318,8 +318,8 @@ SADECE geçerli JSON döndür:
     send({ step: "frame", status: "generating", index: i, total: scenes.length, scene });
 
     const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
-      `${scene.visualPrompt || scene.title}, ${style} style, cinematic, high quality, 16:9 aspect ratio`
-    )}?width=1280&height=720&nologo=true&model=flux&seed=${Math.floor(Math.random() * 999999)}`;
+      `${scene.visualPrompt || scene.title}, ${style} style, cinematic, high quality, dramatic lighting, sharp focus, professional photography, 16:9 aspect ratio`
+    )}?width=1344&height=768&nologo=true&private=true&model=flux-pro&seed=${Math.floor(Math.random() * 9999999)}`;
 
     framesWithImages.push({ ...scene, imageUrl });
     send({ step: "frame", status: "done", index: i, imageUrl, scene });

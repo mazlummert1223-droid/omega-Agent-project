@@ -43,8 +43,7 @@ async function callModel(systemPrompt: string, userPrompt: string): Promise<stri
       });
       const c = res.choices[0]?.message?.content || "";
       if (c) return c;
-    } catch (e: any) {
-      console.error(`[Agent] Failed ${model}:`, e?.message || e);
+    } catch {
       await sleep(400);
       continue;
     }
@@ -116,7 +115,6 @@ router.post("/multi-task", async (req, res) => {
     let streamed = false;
     for (const model of agent.models) {
       try {
-        console.log(`[MultiAgent/${agent.name}] Trying ${model}`);
         const stream = await openrouter.chat.completions.create({
           model,
           max_tokens: 4096,
@@ -136,12 +134,10 @@ router.post("/multi-task", async (req, res) => {
         }
 
         if (agentContent) {
-          console.log(`[MultiAgent/${agent.name}] Success ${model} (${agentContent.length} chars)`);
           streamed = true;
           break;
         }
-      } catch (e: any) {
-        console.error(`[MultiAgent/${agent.name}] Failed ${model}:`, e?.message || e);
+      } catch {
         await sleep(400);
         continue;
       }

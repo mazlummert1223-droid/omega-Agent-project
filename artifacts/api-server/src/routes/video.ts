@@ -63,11 +63,7 @@ async function buildVideoMp4(
     await new Promise((res) => setTimeout(res, i * 800));
     const local = path.join(jobDir, `frame_${i.toString().padStart(3, "0")}.jpg`);
     const ok = await downloadImage(scene.imageUrl, local);
-    if (!ok) {
-      console.error(`[Video] Failed to download scene ${i}`);
-      return null;
-    }
-    console.log(`[Video] ✓ Scene ${i + 1}/${scenes.length} downloaded`);
+    if (!ok) return null;
     return { i, local };
   };
   // 2'şerli batch
@@ -84,7 +80,6 @@ async function buildVideoMp4(
     .forEach((r) => localFiles.push(r.local));
 
   if (localFiles.length === 0) return null;
-  console.log(`[Video] Downloaded ${localFiles.length}/${scenes.length} scenes`);
 
   // 2) Build ffmpeg slideshow with crossfade + Ken Burns zoom
   const outputPath = path.join(jobDir, "output.mp4");
@@ -132,13 +127,8 @@ async function buildVideoMp4(
     outputPath
   );
 
-  console.log(`[Video] Running ffmpeg with ${localFiles.length} scenes...`);
-  const { ok, err } = await runFfmpeg(args);
-  if (!ok) {
-    console.error("[Video] FFmpeg failed:", err.slice(-500));
-    return null;
-  }
-  console.log(`[Video] MP4 ready: ${outputPath}`);
+  const { ok } = await runFfmpeg(args);
+  if (!ok) return null;
   return jobId; // return jobId — file accessible via /api/video/file/:jobId
 }
 
@@ -198,7 +188,6 @@ SADECE geçerli JSON döndür:
 
   for (const model of VIDEO_MODELS) {
     try {
-      console.log(`[Video] Trying ${model}`);
       const response = await openrouter.chat.completions.create({
         model,
         max_tokens: 8192,
@@ -208,12 +197,8 @@ SADECE geçerli JSON döndür:
         ],
       });
       scriptContent = response.choices[0]?.message?.content || "";
-      if (scriptContent) {
-        console.log(`[Video] Success ${model} (${scriptContent.length} chars)`);
-        break;
-      }
-    } catch (e: any) {
-      console.error(`[Video] Failed ${model}:`, e?.message || e);
+      if (scriptContent) break;
+    } catch {
       await sleep(400);
       continue;
     }
@@ -297,9 +282,6 @@ SADECE geçerli JSON döndür:
     return null;
   };
   videoData = tryParseJson(scriptContent);
-  if (!videoData) {
-    console.error("[Video] JSON parse failed, raw content (first 400 chars):", scriptContent.slice(0, 400));
-  }
 
   if (!videoData) {
     send({ error: "Script formatı hatalı, tekrar dene" });
@@ -342,8 +324,8 @@ SADECE geçerli JSON döndür:
     if (built) {
       videoUrl = `/api/video/file/${built}`;
     }
-  } catch (e: any) {
-    console.error("[Video] buildVideoMp4 error:", e?.message || e);
+  } catch {
+    // buildVideoMp4 başarısız — video URL olmadan devam
   }
 
   send({

@@ -5,10 +5,12 @@ import { openrouter } from "@workspace/integrations-openrouter-ai";
 // CJS packages that don't bundle cleanly in ESM — loaded via createRequire
 const _require = createRequire(import.meta.url);
 const multer: any = _require("multer");
-const pdfParse: (buf: Buffer, opts?: any) => Promise<{ text: string; numpages: number; info: any }> = _require("pdf-parse");
 const mammoth: { extractRawText: (opts: { buffer: Buffer }) => Promise<{ value: string }> } = _require("mammoth");
 const XLSX: any = _require("xlsx");
 const JSZip: any = _require("jszip");
+
+// pdf-parse v1: exports a default function pdfParse(buffer) → Promise<{text, numpages, info}>
+const pdfParse: (buf: Buffer, opts?: any) => Promise<{ text: string; numpages: number; info: any }> = _require("pdf-parse");
 
 const router: IRouter = Router();
 

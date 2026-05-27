@@ -50,8 +50,7 @@ export function Sidebar() {
             close();
           }, 0);
         },
-        onError: (err) => {
-          console.error('[NewChat]', err);
+        onError: () => {
           toast.error('Sohbet oluşturulamadı');
         }
       }

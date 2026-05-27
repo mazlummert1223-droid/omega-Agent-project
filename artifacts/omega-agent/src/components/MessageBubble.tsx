@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from './MarkdownRenderer';
-import { Download } from 'lucide-react';
+import { Download, FileText } from 'lucide-react';
 import { IMG_MARKER } from '@/hooks/use-chat';
 
 // Gemini star for AI avatar
@@ -35,11 +35,52 @@ function parseImageContent(content: string): { imageUrl: string | null; text: st
   return { imageUrl: null, text: content };
 }
 
+// Detect embedded file context and extract filename + user question
+// Format: "[DOSYA: name | type | meta]\nİçerik:\n...\n---\nKullanıcı sorusu: question"
+function parseFileMessage(content: string): { fileName: string; fileType: string; question: string } | null {
+  if (!content?.startsWith('[DOSYA:')) return null;
+  try {
+    const headerEnd = content.indexOf(']');
+    if (headerEnd === -1) return null;
+    const header = content.slice(7, headerEnd); // after "[DOSYA:"
+    const parts = header.split('|').map(s => s.trim());
+    const fileName = parts[0] ?? '';
+    const fileType = parts[1] ?? '';
+    const sep = '---\nKullanıcı sorusu:';
+    const idx = content.indexOf(sep);
+    const question = idx !== -1 ? content.slice(idx + sep.length).trim() : '';
+    return { fileName, fileType, question };
+  } catch {
+    return null;
+  }
+}
+
 export function MessageBubble({ role, content, isStreaming }: MessageBubbleProps) {
   const isUser = role === 'user';
   const { imageUrl, text } = parseImageContent(content);
 
   if (isUser) {
+    const fileMsg = parseFileMessage(content);
+    if (fileMsg) {
+      return (
+        <div className="flex justify-end px-4 md:px-8 py-2 animate-fade-up">
+          <div className="max-w-[80%] md:max-w-[70%] flex flex-col gap-2 items-end">
+            <div className="flex items-center gap-2 px-3 py-2 bg-secondary/70 border border-border rounded-xl text-sm text-muted-foreground">
+              <FileText className="w-4 h-4 flex-shrink-0 text-primary" />
+              <span className="truncate max-w-[200px]">{fileMsg.fileName}</span>
+              {fileMsg.fileType && (
+                <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full flex-shrink-0">{fileMsg.fileType}</span>
+              )}
+            </div>
+            {fileMsg.question && (
+              <div className="bg-primary/15 border border-primary/20 rounded-3xl rounded-tr-md px-5 py-3.5 text-[15px] leading-relaxed text-foreground/90 whitespace-pre-wrap">
+                {fileMsg.question}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="flex justify-end px-4 md:px-8 py-2 animate-fade-up">
         <div className="max-w-[80%] md:max-w-[70%]">

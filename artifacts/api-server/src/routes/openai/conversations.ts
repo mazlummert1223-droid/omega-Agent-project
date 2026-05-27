@@ -61,7 +61,6 @@ async function callWithFallback(
   for (let i = 0; i < modelList.length; i++) {
     const model = modelList[i];
     try {
-      console.log(`[AI] Trying model: ${model}`);
       const stream = await openrouter.chat.completions.create({
         model,
         max_tokens: maxTokens,
@@ -73,14 +72,9 @@ async function callWithFallback(
         const c = chunk.choices[0]?.delta?.content;
         if (c) { full += c; onChunk(c); }
       }
-      if (full.length > 0) {
-        console.log(`[AI] Success with: ${model} (${full.length} chars)`);
-        return full;
-      }
-      console.log(`[AI] Empty response from: ${model}`);
+      if (full.length > 0) return full;
     } catch (err: any) {
       const errMsg = err?.message || String(err);
-      console.log(`[AI] Failed ${model}: ${errMsg.slice(0, 200)}`);
       const isRateLimit = errMsg.includes("429") || errMsg.toLowerCase().includes("rate");
       if (isRateLimit && i < modelList.length - 1) {
         await sleep(800);
@@ -142,7 +136,11 @@ router.post("/conversations/:id/save-message", async (req, res) => {
 
   // Auto-rename if user message and conversation still has default title
   if (role === "user" && (!conv.title || conv.title === "Yeni Sohbet")) {
-    const newTitle = content.slice(0, 60).replace(/\n/g, " ").trim();
+    const sep = "---\nKullanıcı sorusu:";
+    const titleSource = content.indexOf(sep) !== -1
+      ? content.slice(content.indexOf(sep) + sep.length).trim()
+      : content;
+    const newTitle = titleSource.slice(0, 60).replace(/\n/g, " ").trim();
     if (newTitle) {
       await db.update(conversations).set({ title: newTitle }).where(eq(conversations.id, id));
     }
@@ -168,8 +166,14 @@ router.post("/conversations/:id/messages", async (req, res) => {
   await db.insert(messages).values({ conversationId: id, role: "user", content: body.content });
 
   // Auto-rename "Yeni Sohbet" using first user message
+  // For file-embedded messages, use the actual user question (after "---\nKullanıcı sorusu:")
   if (!conv.title || conv.title === "Yeni Sohbet") {
-    const newTitle = body.content.slice(0, 60).replace(/\n/g, " ").trim();
+    const sep = "---\nKullanıcı sorusu:";
+    const rawContent = body.content;
+    const titleSource = rawContent.indexOf(sep) !== -1
+      ? rawContent.slice(rawContent.indexOf(sep) + sep.length).trim()
+      : rawContent;
+    const newTitle = titleSource.slice(0, 60).replace(/\n/g, " ").trim();
     if (newTitle) {
       await db.update(conversations).set({ title: newTitle }).where(eq(conversations.id, id));
     }

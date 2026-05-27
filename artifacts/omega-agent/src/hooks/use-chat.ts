@@ -137,10 +137,7 @@ export function useChatStream(conversationId: number | null) {
       }
 
       invalidateConversation();
-    } catch (error: any) {
-      if (error.name !== 'AbortError') {
-        console.error('Stream error:', error);
-      }
+    } catch {
     } finally {
       setIsStreaming(false);
       setCurrentStreamedText("");

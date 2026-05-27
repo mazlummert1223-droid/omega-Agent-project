@@ -108,11 +108,25 @@ const INJECTION_PATTERNS: Array<{ re: RegExp; label: string }> = [
   { re: /önceki\s+talimatlar[ıi]\s*(unut|sil|yoksay)/i, label: "forget_instructions_tr2" },
 ];
 
+// Extract only the user-authored portion of the body for injection checking.
+// When a file is embedded, the format is:
+//   [DOSYA: ...]\nİçerik:\n{file text}\n---\nKullanıcı sorusu: {actual question}
+// We only want to check the actual question, not the document content.
+function extractUserQuery(s: string): string {
+  const sep = "---\nKullanıcı sorusu:";
+  const idx = s.indexOf(sep);
+  if (idx !== -1) return s.slice(idx + sep.length).trim();
+  // No file embed — check the whole string, but cap at 4000 chars to avoid
+  // scanning huge blobs and to prevent CPU exhaustion.
+  return s.substring(0, 4000);
+}
+
 function extractBody(body: unknown): string {
   if (!body || typeof body !== "object") return "";
   const b = body as Record<string, unknown>;
   return [b["content"], b["message"], b["prompt"], b["task"], b["text"], b["query"]]
     .filter((v): v is string => typeof v === "string")
+    .map(extractUserQuery)
     .join(" ");
 }
 

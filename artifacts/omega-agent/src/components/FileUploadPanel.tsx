@@ -3,7 +3,6 @@ import { FileText, FileSpreadsheet, Presentation, Image as ImageIcon, File, Uplo
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 // ── Credit system ─────────────────────────────────────────────────────────────
 const DAILY_KEY = "omega_file_daily";
@@ -29,7 +28,7 @@ function incrementDaily() {
 
 function checkFileCredit(fileSizeMb: number): { ok: boolean; reason: string } {
   const d = getDaily();
-  if (d.count >= FREE_LIMIT && fileSizeMb > FREE_MAX_MB) {
+  if (d.count >= FREE_LIMIT) {
     return { ok: false, reason: `Günlük ücretsiz limit (${FREE_LIMIT} dosya) doldu.` };
   }
   if (fileSizeMb > FREE_MAX_MB) {
@@ -248,7 +247,7 @@ export function FileUploadPanel({ onClose, onFileParsed }: FileUploadPanelProps)
       formData.append("files", file);
 
       setPhase("reading");
-      const response = await fetch(`${BASE}/api/files/parse`, {
+      const response = await fetch(`/api/files/parse`, {
         method: "POST",
         body: formData,
       });

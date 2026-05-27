@@ -47,8 +47,7 @@ export default function Home() {
           }
           setLocation(`/chat/${data.id}`);
         },
-        onError: (err) => {
-          console.error('[Home/NewChat]', err);
+        onError: () => {
           alert('Sohbet başlatılamadı. Lütfen tekrar deneyin.');
         }
       }

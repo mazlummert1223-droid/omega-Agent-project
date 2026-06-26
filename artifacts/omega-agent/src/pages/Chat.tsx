@@ -7,7 +7,7 @@ import { ChatInput } from '@/components/ChatInput';
 import { MultiTaskProgress } from '@/components/MultiTaskProgress';
 import { VideoGenerator } from '@/components/VideoGenerator';
 import { useSidebar } from '@/App';
-import { Loader2, AlertCircle, Menu } from 'lucide-react';
+import { Loader2, AlertCircle, Menu, Image as ImageIcon } from 'lucide-react';
 
 function OmegaAvatar() {
   return (
@@ -127,12 +127,18 @@ export default function ChatPage() {
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
       {/* Mobile Header */}
-      <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-border/30 bg-background/80 backdrop-blur-sm">
-        <button onClick={toggle} className="p-2 rounded-xl hover:bg-secondary text-muted-foreground">
+      <div
+        className="md:hidden flex items-center gap-3 px-4 py-3"
+        style={{ borderBottom: '1px solid hsl(0 0% 12%)', background: 'hsl(0 0% 5%)' }}
+      >
+        <button
+          onClick={toggle}
+          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+        >
           <Menu className="w-5 h-5" />
         </button>
         <OmegaAvatar />
-        <span className="font-semibold text-sm omega-gradient font-display">
+        <span className="font-semibold text-[14px] font-display" style={{ color: 'hsl(195 100% 45%)' }}>
           {conversation.title || 'Sohbet'}
         </span>
       </div>
@@ -180,36 +186,31 @@ export default function ChatPage() {
           {/* Resim üretme yer tutucusu - kullanıcı msg + animasyonlu kart */}
           {pendingImage && (
             <>
-              <MessageBubble
-                role="user"
-                content={pendingImage.prompt}
-              />
-              <div className="flex gap-3 px-4 md:px-8 py-3 animate-fade-up">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-500/20 flex items-center justify-center flex-shrink-0">
+              <MessageBubble role="user" content={pendingImage.prompt} />
+              <div className="flex gap-3 px-4 md:px-10 py-4 animate-fade-up">
+                <div
+                  className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5"
+                  style={{ background: 'hsl(195 100% 45% / 0.08)', border: '1px solid hsl(195 100% 45% / 0.18)' }}
+                >
                   <OmegaAvatar />
                 </div>
-                <div className="flex-1 max-w-md">
-                  <div className="relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-pink-500/10 via-purple-500/10 to-blue-500/10 border border-purple-500/20">
-                    {/* Animasyonlu shimmer overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
-                    {/* Pulse circles */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="relative">
-                        <div className="absolute inset-0 rounded-full bg-pink-500/30 animate-ping" />
-                        <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center shadow-lg">
-                          <svg className="w-8 h-8 text-white animate-pulse" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                    {/* Bottom label */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
-                      <div className="flex items-center gap-2 text-white text-xs">
-                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse" />
-                        <span className="font-medium">Pollinations.AI ({pendingImage.style}) çiziyor…</span>
-                      </div>
-                      <p className="text-white/80 text-xs mt-1 line-clamp-1">{pendingImage.prompt}</p>
+                <div className="flex-1 max-w-xs pt-0.5">
+                  <div className="text-[13px] font-semibold font-display mb-2.5" style={{ color: 'hsl(195 100% 45%)' }}>Omega</div>
+                  <div
+                    className="relative rounded-xl overflow-hidden shimmer"
+                    style={{
+                      aspectRatio: '1/1',
+                      maxWidth: '280px',
+                      background: 'hsl(0 0% 9%)',
+                      border: '1px solid hsl(0 0% 16%)',
+                    }}
+                  >
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                      <Loader2 className="w-7 h-7 animate-spin" style={{ color: 'hsl(195 100% 45% / 0.5)' }} />
+                      <p className="text-[12px] text-center px-4" style={{ color: 'hsl(0 0% 40%)' }}>
+                        Görsel üretiliyor…<br/>
+                        <span style={{ color: 'hsl(0 0% 30%)' }}>{pendingImage.style !== 'default' ? pendingImage.style : ''}</span>
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -228,14 +229,17 @@ export default function ChatPage() {
 
           {/* Streaming indicator when no text yet */}
           {isStreaming && !currentStreamedText && multiTaskEvents.length === 0 && (
-            <div className="flex gap-3 px-4 md:px-8 py-3 animate-fade-up">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/15 to-accent/10 border border-primary/20 flex items-center justify-center">
+            <div className="flex gap-3 px-4 md:px-10 py-4 animate-fade-up">
+              <div
+                className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5"
+                style={{ background: 'hsl(195 100% 45% / 0.08)', border: '1px solid hsl(195 100% 45% / 0.18)' }}
+              >
                 <OmegaAvatar />
               </div>
-              <div className="flex items-center gap-1.5 pt-2.5">
-                <span className="typing-dot w-2 h-2 rounded-full bg-primary/70" />
-                <span className="typing-dot w-2 h-2 rounded-full bg-primary/70" />
-                <span className="typing-dot w-2 h-2 rounded-full bg-primary/70" />
+              <div className="flex items-center gap-1.5 pt-2">
+                <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'hsl(195 100% 45% / 0.6)' }} />
+                <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'hsl(195 100% 45% / 0.6)' }} />
+                <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'hsl(195 100% 45% / 0.6)' }} />
               </div>
             </div>
           )}

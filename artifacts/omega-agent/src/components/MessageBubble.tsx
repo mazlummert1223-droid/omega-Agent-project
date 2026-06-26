@@ -1,21 +1,25 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { Download, FileText } from 'lucide-react';
 import { IMG_MARKER } from '@/hooks/use-chat';
 
-function OmegaAvatar() {
+/* ── Omega avatar mark ── */
+function OmegaMark() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
-      <circle cx="12" cy="10" r="6" stroke="url(#msgGrad)" strokeWidth="1.8"/>
-      <path d="M8 17c0-2.209 1.791-4 4-4s4 1.791 4 4" stroke="url(#msgGrad)" strokeWidth="1.8" strokeLinecap="round"/>
-      <path d="M6 17h12M9.5 17v2M14.5 17v2" stroke="url(#msgGrad)" strokeWidth="1.6" strokeLinecap="round"/>
-      <defs>
-        <linearGradient id="msgGrad" x1="6" y1="4" x2="18" y2="22" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#00D4FF"/>
-          <stop offset="1" stopColor="#F5A623"/>
-        </linearGradient>
-      </defs>
+    <svg viewBox="0 0 20 20" fill="none" className="w-3.5 h-3.5">
+      <circle cx="10" cy="9" r="5.5" stroke="hsl(195 100% 45%)" strokeWidth="1.6" />
+      <path
+        d="M6 15c0-2.21 1.79-4 4-4s4 1.79 4 4"
+        stroke="hsl(195 100% 45%)"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <path
+        d="M4 15h12M7.5 15v2M12.5 15v2"
+        stroke="hsl(195 100% 45%)"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -56,23 +60,43 @@ export function MessageBubble({ role, content, isStreaming }: MessageBubbleProps
   const isUser = role === 'user';
   const { imageUrl, text } = parseImageContent(content);
 
+  /* ── User message ── */
   if (isUser) {
     const fileMsg = parseFileMessage(content);
     if (fileMsg) {
       return (
-        <div className="flex justify-end px-4 md:px-8 py-2 animate-fade-up">
-          <div className="max-w-[80%] md:max-w-[70%] flex flex-col gap-2 items-end">
-            <div className="flex items-center gap-2 px-3 py-2 bg-secondary/60 border border-border/60 rounded-xl text-sm text-muted-foreground">
-              <FileText className="w-4 h-4 flex-shrink-0 text-primary" />
-              <span className="truncate max-w-[200px] text-foreground/70">{fileMsg.fileName}</span>
+        <div className="flex justify-end px-4 md:px-10 py-2 animate-fade-up">
+          <div className="max-w-[78%] flex flex-col gap-2 items-end">
+            {/* File badge */}
+            <div
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
+              style={{
+                background: 'hsl(0 0% 10%)',
+                border: '1px solid hsl(0 0% 16%)',
+                color: 'hsl(0 0% 60%)',
+              }}
+            >
+              <FileText className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'hsl(195 100% 45%)' }} />
+              <span className="truncate max-w-[180px] text-[13px]">{fileMsg.fileName}</span>
               {fileMsg.fileType && (
-                <span className="text-[11px] bg-primary/10 text-primary/80 px-2 py-0.5 rounded-full flex-shrink-0 font-medium">
+                <span
+                  className="text-[11px] px-1.5 py-0.5 rounded font-medium flex-shrink-0"
+                  style={{ background: 'hsl(195 100% 45% / 0.1)', color: 'hsl(195 100% 45%)' }}
+                >
                   {fileMsg.fileType}
                 </span>
               )}
             </div>
+            {/* Question bubble */}
             {fileMsg.question && (
-              <div className="bg-secondary border border-border/60 rounded-2xl rounded-tr-sm px-4 py-3 text-[15px] leading-relaxed text-foreground/85 whitespace-pre-wrap">
+              <div
+                className="px-4 py-3 rounded-2xl rounded-tr-sm text-[14.5px] leading-relaxed whitespace-pre-wrap"
+                style={{
+                  background: 'hsl(0 0% 12%)',
+                  border: '1px solid hsl(0 0% 18%)',
+                  color: 'hsl(0 0% 88%)',
+                }}
+              >
                 {fileMsg.question}
               </div>
             )}
@@ -82,9 +106,16 @@ export function MessageBubble({ role, content, isStreaming }: MessageBubbleProps
     }
 
     return (
-      <div className="flex justify-end px-4 md:px-8 py-2 animate-fade-up">
-        <div className="max-w-[80%] md:max-w-[70%]">
-          <div className="bg-secondary border border-border/60 rounded-2xl rounded-tr-sm px-4 py-3 text-[15px] leading-relaxed text-foreground/85 whitespace-pre-wrap">
+      <div className="flex justify-end px-4 md:px-10 py-2 animate-fade-up">
+        <div className="max-w-[78%]">
+          <div
+            className="px-4 py-3 rounded-2xl rounded-tr-sm text-[14.5px] leading-relaxed whitespace-pre-wrap"
+            style={{
+              background: 'hsl(0 0% 12%)',
+              border: '1px solid hsl(0 0% 18%)',
+              color: 'hsl(0 0% 88%)',
+            }}
+          >
             {content}
           </div>
         </div>
@@ -92,22 +123,35 @@ export function MessageBubble({ role, content, isStreaming }: MessageBubbleProps
     );
   }
 
+  /* ── Assistant message ── */
   return (
-    <div className="flex gap-3 px-4 md:px-8 py-3 animate-fade-up group">
+    <div className="flex gap-3 px-4 md:px-10 py-4 animate-fade-up group/msg">
       {/* Avatar */}
-      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-primary/15 to-accent/10 border border-primary/15 flex items-center justify-center mt-0.5">
-        <OmegaAvatar />
+      <div
+        className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5"
+        style={{
+          background: 'hsl(195 100% 45% / 0.08)',
+          border: '1px solid hsl(195 100% 45% / 0.18)',
+        }}
+      >
+        <OmegaMark />
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-sm font-semibold omega-gradient font-display">Omega</span>
+      <div className="flex-1 min-w-0 pt-0.5">
+        {/* Name + streaming dots */}
+        <div className="flex items-center gap-2.5 mb-2.5">
+          <span
+            className="text-[13px] font-semibold font-display"
+            style={{ color: 'hsl(195 100% 45%)' }}
+          >
+            Omega
+          </span>
           {isStreaming && (
             <span className="flex gap-1 items-center">
-              <span className="typing-dot w-1.5 h-1.5 rounded-full bg-primary/60" />
-              <span className="typing-dot w-1.5 h-1.5 rounded-full bg-primary/60" />
-              <span className="typing-dot w-1.5 h-1.5 rounded-full bg-primary/60" />
+              <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'hsl(195 100% 45% / 0.6)' }} />
+              <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'hsl(195 100% 45% / 0.6)' }} />
+              <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'hsl(195 100% 45% / 0.6)' }} />
             </span>
           )}
         </div>
@@ -118,7 +162,8 @@ export function MessageBubble({ role, content, isStreaming }: MessageBubbleProps
             <img
               src={imageUrl}
               alt="Üretilen görsel"
-              className="rounded-2xl max-w-md w-full shadow-xl border border-border/40"
+              className="rounded-xl max-w-sm w-full shadow-lg"
+              style={{ border: '1px solid hsl(0 0% 18%)' }}
               loading="lazy"
             />
             <a
@@ -126,17 +171,18 @@ export function MessageBubble({ role, content, isStreaming }: MessageBubbleProps
               download
               target="_blank"
               rel="noopener noreferrer"
-              className="absolute top-2 right-2 p-2 rounded-full bg-black/60 backdrop-blur-md border border-white/10 opacity-0 group-hover/img:opacity-100 transition-opacity hover:bg-black/80"
+              className="absolute top-2 right-2 p-1.5 rounded-lg opacity-0 group-hover/img:opacity-100 transition-opacity"
+              style={{ background: 'rgba(0,0,0,0.65)', border: '1px solid rgba(255,255,255,0.1)' }}
               title="İndir"
             >
-              <Download className="w-4 h-4 text-white" />
+              <Download className="w-3.5 h-3.5 text-white" />
             </a>
           </div>
         )}
 
-        {/* Text content */}
+        {/* Text */}
         {text && (
-          <div className="prose text-[15px]">
+          <div className="prose">
             <MarkdownRenderer content={text} />
           </div>
         )}

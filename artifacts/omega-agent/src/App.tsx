@@ -94,11 +94,11 @@ export default function App() {
         position="top-center"
         toastOptions={{
           style: {
-            background: "rgba(20, 25, 40, 0.95)",
-            border: "1px solid rgba(66, 133, 244, 0.3)",
-            color: "#fff",
-            borderRadius: "12px",
-            backdropFilter: "blur(12px)",
+            background: "hsl(0 0% 10%)",
+            border: "1px solid hsl(0 0% 18%)",
+            color: "hsl(0 0% 88%)",
+            borderRadius: "10px",
+            fontSize: "13px",
           }
         }}
       />

@@ -1,10 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: 'Inter', 'Space Grotesk', sans-serif;
+  --font-sans: 'Inter', sans-serif;
   --font-display: 'Space Grotesk', 'Inter', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-mono: 'JetBrains Mono', 'Fira Mono', monospace;
 
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
@@ -24,186 +24,215 @@
   --color-card-foreground: hsl(var(--card-foreground));
 }
 
+/* ─── Design Tokens ─── */
 :root {
-  /* Deep, rich dark — not pure black, not navy blue */
-  --background: 220 16% 6%;
-  --foreground: 210 20% 94%;
-  --card: 220 14% 9%;
-  --card-foreground: 210 20% 94%;
-  --popover: 220 14% 9%;
-  --popover-foreground: 210 20% 94%;
-  /* Omega cyan — distinctive, not Gemini blue */
-  --primary: 191 100% 50%;
-  --primary-foreground: 220 16% 6%;
-  --secondary: 220 14% 13%;
-  --secondary-foreground: 210 20% 80%;
-  --muted: 220 14% 13%;
-  --muted-foreground: 215 12% 48%;
-  /* Gold accent */
-  --accent: 38 92% 60%;
-  --accent-foreground: 220 16% 6%;
+  --background: 0 0% 5%;         /* #0D0D0D – near-black, Groq-inspired */
+  --foreground: 0 0% 92%;        /* #EBEBEB */
+  --card: 0 0% 8%;               /* #141414 */
+  --card-foreground: 0 0% 92%;
+  --popover: 0 0% 8%;
+  --popover-foreground: 0 0% 92%;
+  --primary: 195 100% 45%;       /* #00ADCC – teal/cyan, unique brand color */
+  --primary-foreground: 0 0% 5%;
+  --secondary: 0 0% 11%;         /* #1C1C1C */
+  --secondary-foreground: 0 0% 75%;
+  --muted: 0 0% 11%;
+  --muted-foreground: 0 0% 42%;  /* #6B6B6B */
+  --accent: 35 95% 58%;          /* #F5A020 – warm amber, minimal use */
+  --accent-foreground: 0 0% 5%;
   --destructive: 0 72% 55%;
   --destructive-foreground: 0 0% 98%;
-  --border: 220 14% 16%;
-  --ring: 191 100% 50%;
-  --radius: 0.75rem;
+  --border: 0 0% 14%;            /* #242424 */
+  --ring: 195 100% 45%;
+  --radius: 0.625rem;
 }
 
+/* ─── Base ─── */
 @layer base {
   * {
     @apply border-border;
     box-sizing: border-box;
   }
+  html { -webkit-font-smoothing: antialiased; }
   body {
-    @apply bg-background text-foreground antialiased font-sans;
-    background-image:
-      radial-gradient(ellipse 70% 50% at 20% -10%, rgba(0, 212, 255, 0.04), transparent),
-      radial-gradient(ellipse 50% 40% at 85% 90%, rgba(245, 166, 35, 0.03), transparent);
-    background-attachment: fixed;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-sans);
   }
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-display);
-  }
+  h1, h2, h3 { font-family: var(--font-display); }
 }
 
+/* ─── Utilities ─── */
 @layer utilities {
-  /* Omega signature gradient — cyan → white → gold */
+  /* Omega brand gradient — used sparingly on logo/name only */
   .omega-gradient {
-    background: linear-gradient(135deg, #00D4FF 0%, #ffffff 50%, #F5A623 100%);
+    background: linear-gradient(130deg, #00C8EE 0%, #00ADCC 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
-  /* Keep gemini-gradient class name for backward compat — map to omega */
+  /* Backward compat */
   .gemini-gradient {
-    background: linear-gradient(135deg, #00D4FF 0%, #7dd3fc 50%, #F5A623 100%);
+    background: linear-gradient(130deg, #00C8EE 0%, #00ADCC 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
-  .omega-glow {
-    box-shadow: 0 0 0 1px rgba(0,212,255,0.25), 0 4px 32px rgba(0,212,255,0.08);
-  }
+
   .glass-panel {
-    @apply bg-card/80 backdrop-blur-xl border border-border;
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    backdrop-filter: blur(12px);
   }
   .surface {
-    @apply bg-secondary/60 border border-border/50 rounded-2xl;
+    background: hsl(var(--secondary));
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.75rem;
   }
 
-  /* Scrollbar */
+  /* Scrollbar — ultra thin */
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 9999px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+  ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.3); }
 
-  /* Input glow — cyan tint */
+  /* Input focus ring — inspired by Groq's clean focus state */
+  .input-focus {
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  .input-focus:focus-within {
+    border-color: hsl(var(--primary) / 0.4) !important;
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.08);
+  }
+  /* Keep old class name */
   .input-glow:focus-within {
-    box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.3), 0 8px 32px rgba(0, 212, 255, 0.06);
-  }
-
-  /* Agent deliberation panel */
-  .agent-panel {
-    border-left: 2px solid rgba(0, 212, 255, 0.2);
+    border-color: hsl(var(--primary) / 0.4) !important;
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.08);
   }
 }
 
-/* Markdown prose */
+/* ─── Prose (Markdown) ─── */
 .prose {
-  @apply text-foreground max-w-none;
+  color: hsl(var(--foreground) / 0.9);
+  max-width: none;
   font-size: 15px;
-  line-height: 1.75;
+  line-height: 1.8;
+  font-family: var(--font-sans);
 }
-.prose p { @apply mb-3 text-foreground/90; }
-.prose p:last-child { @apply mb-0; }
-.prose a { color: #00D4FF; text-decoration: none; }
+.prose p { margin-bottom: 0.85em; }
+.prose p:last-child { margin-bottom: 0; }
+.prose a { color: hsl(var(--primary)); text-decoration: none; }
 .prose a:hover { text-decoration: underline; }
-.prose strong { @apply text-white font-semibold; }
-.prose em { @apply text-foreground/80; }
-.prose ul { @apply list-disc pl-5 mb-3 space-y-1.5; }
-.prose ol { @apply list-decimal pl-5 mb-3 space-y-1.5; }
-.prose li { @apply text-foreground/90; }
+.prose strong { color: hsl(var(--foreground)); font-weight: 600; }
+.prose em { color: hsl(var(--foreground) / 0.75); }
+.prose ul { list-style: disc; padding-left: 1.25rem; margin-bottom: 0.85em; }
+.prose ol { list-style: decimal; padding-left: 1.25rem; margin-bottom: 0.85em; }
+.prose li { margin-bottom: 0.35em; color: hsl(var(--foreground) / 0.85); }
+.prose li:last-child { margin-bottom: 0; }
 .prose blockquote {
-  @apply border-l-2 pl-4 italic text-muted-foreground my-4;
-  border-color: rgba(0, 212, 255, 0.35);
+  border-left: 2px solid hsl(var(--border));
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: hsl(var(--muted-foreground));
+  font-style: italic;
 }
 .prose h1, .prose h2, .prose h3, .prose h4 {
-  @apply text-white font-semibold mb-2 mt-5;
+  color: hsl(var(--foreground));
   font-family: var(--font-display);
-  letter-spacing: -0.01em;
+  font-weight: 600;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  letter-spacing: -0.015em;
 }
-.prose h1 { @apply text-xl; }
-.prose h2 { @apply text-lg; }
-.prose h3 { @apply text-base; }
-.prose code {
-  background: rgba(0, 212, 255, 0.08);
-  color: #00D4FF;
-  @apply px-1.5 py-0.5 rounded text-sm;
-  font-family: var(--font-mono);
-}
-.prose img { @apply rounded-xl max-w-full my-3 shadow-lg; }
-.prose table { @apply w-full border-collapse text-sm mb-4; }
-.prose th { @apply bg-secondary text-white font-semibold px-3 py-2 text-left border border-border; }
-.prose td { @apply px-3 py-2 border border-border text-foreground/80; }
-.prose tr:nth-child(even) td { @apply bg-secondary/30; }
-.prose hr { @apply border-border my-5; }
+.prose h1 { font-size: 1.25rem; margin-top: 0.5em; }
+.prose h2 { font-size: 1.1rem; }
+.prose h3 { font-size: 1rem; }
+.prose h4 { font-size: 0.95rem; }
 
-/* Code blocks */
+/* Inline code */
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  background: hsl(var(--secondary));
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--primary));
+  padding: 0.15em 0.45em;
+  border-radius: 0.3rem;
+}
+/* Block code */
 .prose pre {
-  @apply rounded-xl my-4 overflow-x-auto;
-  background: rgba(0,0,0,0.4);
-  border: 1px solid rgba(255,255,255,0.06);
+  background: hsl(0 0% 7%);
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.625rem;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  margin: 1em 0;
 }
 .prose pre code {
   background: transparent;
-  color: #e2e8f0;
+  border: none;
+  color: hsl(var(--foreground) / 0.9);
   padding: 0;
-  font-size: 13px;
-  line-height: 1.7;
+  font-size: 0.825rem;
+  line-height: 1.75;
 }
 
-/* Animations */
+/* Tables */
+.prose table { width: 100%; border-collapse: collapse; font-size: 0.9em; margin: 1em 0; }
+.prose th {
+  background: hsl(var(--secondary));
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  padding: 0.6rem 0.9rem;
+  text-align: left;
+  border: 1px solid hsl(var(--border));
+}
+.prose td {
+  padding: 0.55rem 0.9rem;
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground) / 0.8);
+}
+.prose tr:nth-child(even) td { background: hsl(var(--secondary) / 0.4); }
+.prose img { border-radius: 0.75rem; max-width: 100%; margin: 1em 0; }
+.prose hr { border: none; border-top: 1px solid hsl(var(--border)); margin: 1.5em 0; }
+
+/* ─── Animations ─── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up { animation: fadeInUp 0.25s ease forwards; }
+
+@keyframes pulseSoft {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+.animate-pulse-soft { animation: pulseSoft 2s ease infinite; }
+
+@keyframes typewriterDot {
+  0%, 80%, 100% { transform: scale(0.55); opacity: 0.35; }
+  40%           { transform: scale(1);    opacity: 1; }
+}
+.typing-dot:nth-child(1) { animation: typewriterDot 1.2s ease infinite 0s;    }
+.typing-dot:nth-child(2) { animation: typewriterDot 1.2s ease infinite 0.18s; }
+.typing-dot:nth-child(3) { animation: typewriterDot 1.2s ease infinite 0.36s; }
+
 @keyframes shimmer {
-  0% { background-position: -200% center; }
-  100% { background-position: 200% center; }
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
 }
 .shimmer {
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+  background: linear-gradient(90deg, transparent, hsl(var(--foreground) / 0.04), transparent);
   background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+  animation: shimmer 1.6s infinite;
 }
 
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.animate-fade-up {
-  animation: fadeInUp 0.35s ease forwards;
-}
-
-@keyframes pulse-soft {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-.animate-pulse-soft {
-  animation: pulse-soft 2s ease infinite;
-}
-
-@keyframes typewriter-dot {
-  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-  40% { transform: scale(1); opacity: 1; }
-}
-.typing-dot:nth-child(1) { animation: typewriter-dot 1.2s ease infinite 0s; }
-.typing-dot:nth-child(2) { animation: typewriter-dot 1.2s ease infinite 0.2s; }
-.typing-dot:nth-child(3) { animation: typewriter-dot 1.2s ease infinite 0.4s; }
-
-/* Mobile overlay */
+/* ─── Mobile sidebar overlay ─── */
 @media (max-width: 768px) {
   .sidebar-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    backdrop-filter: blur(6px);
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
     z-index: 40;
   }
 }

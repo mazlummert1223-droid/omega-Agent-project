@@ -1,24 +1,23 @@
 import React, { useState } from 'react';
 import { useListOpenaiConversations, useCreateOpenaiConversation, useDeleteOpenaiConversation, getListOpenaiConversationsQueryKey } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { MessageSquare, Plus, Trash2, Loader2, PenSquare, X, Lock } from 'lucide-react';
+import { MessageSquare, Trash2, Loader2, PenSquare, X, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
 import { Link, useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { useSidebar } from '@/App';
 import { lockSession } from '@/lib/security';
 
-// Gemini-style star SVG
-function GeminiStar({ className }: { className?: string }) {
+function OmegaIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M14 2C14 2 15.5 10 22 14C15.5 18 14 26 14 26C14 26 12.5 18 6 14C12.5 10 14 2 14 2Z" fill="url(#geminiGrad)"/>
+    <svg className={className} viewBox="0 0 32 32" fill="none">
+      <circle cx="16" cy="14" r="9" stroke="url(#sGrad)" strokeWidth="2.2"/>
+      <path d="M10 24c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="url(#sGrad)" strokeWidth="2.2" strokeLinecap="round"/>
+      <path d="M7 24h18M11 24v2M21 24v2" stroke="url(#sGrad)" strokeWidth="2" strokeLinecap="round"/>
       <defs>
-        <linearGradient id="geminiGrad" x1="6" y1="2" x2="22" y2="26" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#4285F4"/>
-          <stop offset="0.5" stopColor="#9B72CB"/>
-          <stop offset="1" stopColor="#D96570"/>
+        <linearGradient id="sGrad" x1="7" y1="5" x2="25" y2="28" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#00D4FF"/>
+          <stop offset="1" stopColor="#F5A623"/>
         </linearGradient>
       </defs>
     </svg>
@@ -42,8 +41,6 @@ export function Sidebar() {
       { data: { title: "Yeni Sohbet" } },
       {
         onSuccess: (data) => {
-          // Önce navigasyon yap, sonra refetch ve sidebar kapat
-          // (aynı anda 3 state güncellemesi DOM hatasına yol açıyordu)
           setLocation(`/chat/${data.id}`);
           setTimeout(() => {
             queryClient.invalidateQueries({ queryKey: getListOpenaiConversationsQueryKey() });
@@ -96,32 +93,34 @@ export function Sidebar() {
   }
 
   return (
-    <div className="w-72 h-full bg-card/80 backdrop-blur-2xl border-r border-border flex flex-col">
+    <div className="w-72 h-full flex flex-col" style={{ background: 'hsl(220 16% 7%)' }}>
       {/* Header */}
-      <div className="px-4 pt-5 pb-3 flex items-center justify-between">
+      <div className="px-4 pt-5 pb-2 flex items-center justify-between border-b border-border/30">
         <div className="flex items-center gap-2.5">
-          <GeminiStar className="w-8 h-8" />
-          <span className="font-display font-bold text-xl gemini-gradient">Omega AI</span>
+          <OmegaIcon className="w-8 h-8" />
+          <div>
+            <span className="font-display font-bold text-base tracking-tight omega-gradient">Omega AI</span>
+            <div className="text-[10px] text-muted-foreground/50 leading-none mt-0.5">Yapay Zeka Asistanı</div>
+          </div>
         </div>
-        {/* Close on mobile */}
         <button
           onClick={close}
-          className="md:hidden p-1.5 rounded-lg hover:bg-secondary text-muted-foreground"
+          className="md:hidden p-1.5 rounded-lg hover:bg-secondary text-muted-foreground transition-colors"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
       </div>
 
-      {/* New Chat */}
-      <div className="px-3 pb-2">
+      {/* New Chat Button */}
+      <div className="px-3 py-3">
         <button
           onClick={handleNewChat}
           disabled={createMutation.isPending}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-full bg-secondary/60 hover:bg-secondary border border-border/60 text-sm font-medium text-foreground/90 hover:text-white transition-all duration-200"
+          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl bg-primary/10 hover:bg-primary/15 border border-primary/20 hover:border-primary/35 text-sm font-medium text-primary/90 hover:text-primary transition-all duration-200 group"
         >
           {createMutation.isPending
-            ? <Loader2 className="w-4 h-4 animate-spin text-primary" />
-            : <PenSquare className="w-4 h-4 text-primary" />
+            ? <Loader2 className="w-4 h-4 animate-spin" />
+            : <PenSquare className="w-4 h-4 group-hover:scale-110 transition-transform" />
           }
           Yeni Sohbet
         </button>
@@ -130,19 +129,21 @@ export function Sidebar() {
       {/* Conversation List */}
       <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-4">
         {isLoading ? (
-          <div className="flex justify-center p-6">
-            <Loader2 className="w-5 h-5 text-primary animate-spin" />
+          <div className="flex justify-center p-8">
+            <Loader2 className="w-4 h-4 text-primary animate-spin" />
           </div>
         ) : groups.length === 0 ? (
-          <div className="text-center p-6 text-sm text-muted-foreground flex flex-col items-center gap-2 mt-8">
-            <MessageSquare className="w-8 h-8 opacity-30" />
-            <p>Henüz sohbet yok</p>
-            <p className="text-xs opacity-60">Yukarıdan yeni sohbet başlat</p>
+          <div className="text-center p-8 text-sm text-muted-foreground flex flex-col items-center gap-3 mt-4">
+            <MessageSquare className="w-7 h-7 opacity-20" />
+            <div>
+              <p className="font-medium text-foreground/40">Henüz sohbet yok</p>
+              <p className="text-xs opacity-60 mt-1">Yeni sohbet başlatın</p>
+            </div>
           </div>
         ) : (
           groups.map(group => (
             <div key={group.label}>
-              <p className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-wider px-3 py-1">
+              <p className="text-[10px] font-semibold text-muted-foreground/40 uppercase tracking-widest px-3 py-1.5">
                 {group.label}
               </p>
               <div className="space-y-0.5">
@@ -151,22 +152,25 @@ export function Sidebar() {
                   return (
                     <Link key={conv.id} href={`/chat/${conv.id}`} onClick={close}>
                       <div className={cn(
-                        "group flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-150",
+                        "group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-all duration-150",
                         isActive
-                          ? "bg-primary/10 text-white"
-                          : "text-foreground/70 hover:bg-secondary/80 hover:text-foreground"
+                          ? "bg-primary/10 border border-primary/15"
+                          : "hover:bg-secondary/60 border border-transparent"
                       )}>
-                        <span className="text-sm truncate flex-1 leading-snug">
+                        <span className={cn(
+                          "text-[13px] truncate flex-1 leading-snug",
+                          isActive ? "text-primary/90 font-medium" : "text-foreground/60 hover:text-foreground/90"
+                        )}>
                           {conv.title || 'Yeni Sohbet'}
                         </span>
                         <button
                           onClick={(e) => handleDelete(e, conv.id)}
                           disabled={deletingId === conv.id}
-                          className="opacity-0 group-hover:opacity-100 p-1 hover:text-destructive rounded-md transition-all flex-shrink-0 ml-1"
+                          className="opacity-0 group-hover:opacity-60 hover:!opacity-100 p-1 hover:text-destructive rounded transition-all flex-shrink-0 ml-1"
                         >
                           {deletingId === conv.id
-                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            : <Trash2 className="w-3.5 h-3.5" />
+                            ? <Loader2 className="w-3 h-3 animate-spin" />
+                            : <Trash2 className="w-3 h-3" />
                           }
                         </button>
                       </div>
@@ -180,21 +184,16 @@ export function Sidebar() {
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-3 border-t border-border/50 space-y-2">
+      <div className="px-3 py-3 border-t border-border/30 space-y-2">
         <button
-          onClick={() => {
-            lockSession();
-            window.location.reload();
-          }}
-          className="w-full flex items-center justify-center gap-2 text-muted-foreground/60 hover:text-white hover:bg-secondary/50 transition-colors text-xs py-1.5 rounded-lg"
-          title="Oturumu kilitle"
+          onClick={() => { lockSession(); window.location.reload(); }}
+          className="w-full flex items-center justify-center gap-2 text-muted-foreground/50 hover:text-muted-foreground hover:bg-secondary/40 transition-colors text-xs py-2 rounded-lg"
         >
           <Lock className="w-3 h-3" />
           <span>Oturumu Kilitle</span>
         </button>
-        <p className="text-[11px] text-muted-foreground/50 text-center leading-relaxed">
-          Hermes 405B · Qwen3 80B · Llama 3.3 70B<br/>
-          Gemma 4 · Pollinations · DuckDuckGo
+        <p className="text-[10px] text-muted-foreground/30 text-center leading-relaxed">
+          Hermes 405B · Qwen3 80B · Llama 3.3 70B · Gemma 4
         </p>
       </div>
     </div>

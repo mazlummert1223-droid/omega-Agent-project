@@ -9,15 +9,16 @@ import { VideoGenerator } from '@/components/VideoGenerator';
 import { useSidebar } from '@/App';
 import { Loader2, AlertCircle, Menu } from 'lucide-react';
 
-function GeminiStar() {
+function OmegaAvatar() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
-      <path d="M12 2C12 2 13 9 18 12C13 15 12 22 12 22C12 22 11 15 6 12C11 9 12 2 12 2Z" fill="url(#hGrad)"/>
+    <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
+      <circle cx="12" cy="10" r="6" stroke="url(#avGrad)" strokeWidth="1.8"/>
+      <path d="M8 17c0-2.209 1.791-4 4-4s4 1.791 4 4" stroke="url(#avGrad)" strokeWidth="1.8" strokeLinecap="round"/>
+      <path d="M6 17h12M9.5 17v2M14.5 17v2" stroke="url(#avGrad)" strokeWidth="1.6" strokeLinecap="round"/>
       <defs>
-        <linearGradient id="hGrad" x1="6" y1="2" x2="18" y2="22" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#4285F4"/>
-          <stop offset="0.5" stopColor="#9B72CB"/>
-          <stop offset="1" stopColor="#D96570"/>
+        <linearGradient id="avGrad" x1="6" y1="4" x2="18" y2="22" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#00D4FF"/>
+          <stop offset="1" stopColor="#F5A623"/>
         </linearGradient>
       </defs>
     </svg>
@@ -35,7 +36,7 @@ export default function ChatPage() {
   const { data: conversation, isLoading, isError, refetch } = useGetOpenaiConversation(convId, {
     query: { retry: 3, retryDelay: 600 },
   });
-  const { sendMessage, isStreaming, currentStreamedText, multiTaskEvents, stopStream } = useChatStream(convId);
+  const { sendMessage, isStreaming, currentStreamedText, multiTaskEvents, synthesisText, stopStream } = useChatStream(convId);
 
   // Resim üretme handler - önce yer tutucu göster, sonra üret
   const handleImageGenerate = async (prompt: string, style: string) => {
@@ -126,12 +127,12 @@ export default function ChatPage() {
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
       {/* Mobile Header */}
-      <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-border/50 bg-background/80 backdrop-blur-sm">
+      <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-border/30 bg-background/80 backdrop-blur-sm">
         <button onClick={toggle} className="p-2 rounded-xl hover:bg-secondary text-muted-foreground">
           <Menu className="w-5 h-5" />
         </button>
-        <GeminiStar />
-        <span className="font-semibold text-sm gemini-gradient">
+        <OmegaAvatar />
+        <span className="font-semibold text-sm omega-gradient font-display">
           {conversation.title || 'Sohbet'}
         </span>
       </div>
@@ -142,20 +143,21 @@ export default function ChatPage() {
 
           {allMessages.length === 0 && !isStreaming ? (
             <div className="flex flex-col items-center justify-center h-60 text-center px-4 animate-fade-up">
-              <div className="w-16 h-16 mb-5 opacity-50">
+              <div className="w-14 h-14 mb-5 opacity-40">
                 <svg viewBox="0 0 56 56" fill="none" className="w-full h-full">
-                  <path d="M28 4C28 4 31 22 44 28C31 34 28 52 28 52C28 52 25 34 12 28C25 22 28 4 28 4Z" fill="url(#emptyGrad)"/>
+                  <circle cx="28" cy="24" r="16" stroke="url(#emptyGrad)" strokeWidth="3"/>
+                  <path d="M18 42c0-5.523 4.477-10 10-10s10 4.477 10 10" stroke="url(#emptyGrad)" strokeWidth="3" strokeLinecap="round"/>
+                  <path d="M12 42h32M20 42v4M36 42v4" stroke="url(#emptyGrad)" strokeWidth="2.5" strokeLinecap="round"/>
                   <defs>
-                    <linearGradient id="emptyGrad" x1="12" y1="4" x2="44" y2="52" gradientUnits="userSpaceOnUse">
-                      <stop stopColor="#4285F4"/>
-                      <stop offset="0.5" stopColor="#9B72CB"/>
-                      <stop offset="1" stopColor="#D96570"/>
+                    <linearGradient id="emptyGrad" x1="12" y1="8" x2="44" y2="52" gradientUnits="userSpaceOnUse">
+                      <stop stopColor="#00D4FF"/>
+                      <stop offset="1" stopColor="#F5A623"/>
                     </linearGradient>
                   </defs>
                 </svg>
               </div>
-              <h2 className="text-xl font-semibold mb-1">Sohbet Hazır</h2>
-              <p className="text-muted-foreground text-sm max-w-xs">
+              <h2 className="text-xl font-display font-semibold mb-1.5">Sohbet Hazır</h2>
+              <p className="text-muted-foreground text-sm max-w-xs leading-relaxed">
                 Aşağıya bir şey yaz veya sesli komut ver. Her türlü soru ve görev için buradayım.
               </p>
             </div>
@@ -171,8 +173,8 @@ export default function ChatPage() {
           )}
 
           {/* Multi-task streaming */}
-          {multiTaskEvents.length > 0 && (
-            <MultiTaskProgress events={multiTaskEvents} />
+          {(multiTaskEvents.length > 0 || synthesisText) && (
+            <MultiTaskProgress events={multiTaskEvents} synthesisText={synthesisText} />
           )}
 
           {/* Resim üretme yer tutucusu - kullanıcı msg + animasyonlu kart */}
@@ -183,8 +185,8 @@ export default function ChatPage() {
                 content={pendingImage.prompt}
               />
               <div className="flex gap-3 px-4 md:px-8 py-3 animate-fade-up">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-500/30 to-purple-500/30 border border-pink-500/30 flex items-center justify-center flex-shrink-0">
-                  <GeminiStar />
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-500/20 flex items-center justify-center flex-shrink-0">
+                  <OmegaAvatar />
                 </div>
                 <div className="flex-1 max-w-md">
                   <div className="relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-pink-500/10 via-purple-500/10 to-blue-500/10 border border-purple-500/20">
@@ -227,13 +229,13 @@ export default function ChatPage() {
           {/* Streaming indicator when no text yet */}
           {isStreaming && !currentStreamedText && multiTaskEvents.length === 0 && (
             <div className="flex gap-3 px-4 md:px-8 py-3 animate-fade-up">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-primary/20 flex items-center justify-center">
-                <GeminiStar />
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/15 to-accent/10 border border-primary/20 flex items-center justify-center">
+                <OmegaAvatar />
               </div>
-              <div className="flex items-center gap-1.5 pt-2">
-                <span className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 rounded-full bg-accent animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 rounded-full bg-pink-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+              <div className="flex items-center gap-1.5 pt-2.5">
+                <span className="typing-dot w-2 h-2 rounded-full bg-primary/70" />
+                <span className="typing-dot w-2 h-2 rounded-full bg-primary/70" />
+                <span className="typing-dot w-2 h-2 rounded-full bg-primary/70" />
               </div>
             </div>
           )}

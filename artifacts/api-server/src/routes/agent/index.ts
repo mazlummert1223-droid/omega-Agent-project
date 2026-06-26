@@ -4,7 +4,6 @@ import { db } from "@workspace/db";
 import { messages } from "@workspace/db";
 import { AgentWebSearchBody, AgentMultiTaskBody } from "@workspace/api-zod";
 
-// Doğrulanmış çalışan ücretsiz modeller (Nisan 2026)
 const FALLBACK_MODELS = [
   "nousresearch/hermes-3-llama-3.1-405b:free",
   "qwen/qwen3-next-80b-a3b-instruct:free",
@@ -88,26 +87,33 @@ router.post("/multi-task", async (req, res) => {
   const agents = [
     {
       name: "researcher",
-      label: "🔍 Araştırmacı Agent",
+      label: "Araştırmacı",
       models: FALLBACK_MODELS,
-      system: `Sen bir araştırma uzmanısın. Görev hakkında kapsamlı araştırma ve detaylı bilgi sunarsın. Her zaman Türkçe yaz.`,
+      system: `Sen bir araştırma uzmanısın. Görev hakkında kapsamlı araştırma ve detaylı bilgi sunarsın. 
+Sadece araştırma ve analiz perspektifinden yaklaş. Kaynak ve referanslara dikkat et. Türkçe yaz.
+Cevabını "ARAŞTIRMA BULGULARI:" başlığıyla başlat.`,
     },
     {
       name: "coder",
-      label: "💻 Kodcu Agent",
+      label: "Mühendis",
       models: CODER_MODELS,
-      system: `Sen bir yazılım mühendisisin. Görev için tam ve çalışır kod yazarsın. Türkçe açıklamalarla markdown kod blokları kullan.`,
+      system: `Sen bir yazılım mühendisisin. Görev için teknik implementasyon ve kod çözümleri üretirsin.
+Sadece teknik açıdan yaklaş: mimariler, algoritmalar, kod örnekleri. Türkçe açıklamalarla markdown kullan.
+Cevabını "TEKNİK ANALİZ:" başlığıyla başlat.`,
     },
     {
       name: "designer",
-      label: "🎨 Tasarımcı Agent",
+      label: "Stratejist",
       models: FALLBACK_MODELS,
-      system: `Sen bir UI/UX tasarım uzmanısın. Görev için tasarım önerileri, HTML/CSS ve görsel çözümler sunarsın. Türkçe yaz.`,
+      system: `Sen bir ürün stratejisti ve UX uzmanısın. Görev için kullanıcı deneyimi, iş değeri ve tasarım perspektifi sunarsın.
+Araştırma ve teknik bulgulara eleştirel bir gözle bak, eksikleri tamamla, stratejik öneriler sun. Türkçe yaz.
+Cevabını "STRATEJİK YORUM:" başlığıyla başlat.`,
     },
   ];
 
-  let fullReport = `# Omega Çok-Ajan Raporu\n\n**Görev:** ${task}\n\n---\n\n`;
+  const agentOutputs: Record<string, string> = {};
 
+  // Aşama 1: Her ajan kendi uzmanlık alanından çalışır
   for (const agent of agents) {
     send({ agent: agent.name, label: agent.label, status: "running" });
 
@@ -117,7 +123,7 @@ router.post("/multi-task", async (req, res) => {
       try {
         const stream = await openrouter.chat.completions.create({
           model,
-          max_tokens: 4096,
+          max_tokens: 3000,
           messages: [
             { role: "system", content: agent.system },
             { role: "user", content: task },
@@ -144,19 +150,91 @@ router.post("/multi-task", async (req, res) => {
     }
 
     if (!streamed) {
-      agentContent = "Bu ajan şu an yanıt veremiyor (tüm modeller meşgul).";
+      agentContent = "Bu ajan şu an yanıt veremiyor.";
       send({ agent: agent.name, label: agent.label, content: agentContent, status: "streaming" });
     }
 
-    fullReport += `## ${agent.label}\n\n${agentContent}\n\n---\n\n`;
+    agentOutputs[agent.name] = agentContent;
     send({ agent: agent.name, label: agent.label, status: "done" });
   }
+
+  // Aşama 2: Sentez — tüm ajanların görüşlerini birleştir
+  send({ agent: "synthesis", label: "Sentez", status: "running" });
+
+  const synthesisSystem = `Sen bir baş koordinatör yapay zekasın. Sana üç farklı uzmanın (araştırmacı, mühendis, stratejist) aynı göreve ilişkin görüşleri verildi.
+Görevin:
+1. Üç perspektifi eleştirel gözle değerlendir — hangi noktalarda hemfikirler, nerede çelişiyorlar?
+2. Çelişkileri çözüme kavuştur ve en doğru/kullanışlı yaklaşımı seç.
+3. Tüm görüşleri sentezleyerek KULLANICIYA YÖNELİK tek, tutarlı, kapsamlı bir cevap üret.
+4. Cevabın doğrudan kullanışlı olsun — "şu ajan şunu söyledi" diye atıfta bulunma.
+5. Türkçe, akıcı, profesyonel yaz. Markdown kullan.`;
+
+  const synthesisPrompt = `**GÖREV:** ${task}
+
+---
+
+**ARAŞTIRMACI GÖRÜŞܦ**
+${agentOutputs["researcher"] || "Yanıt alınamadı."}
+
+---
+
+**MÜHENDİS GÖRÜŞܦ**
+${agentOutputs["coder"] || "Yanıt alınamadı."}
+
+---
+
+**STRATEJİST GÖRÜŞܦ**
+${agentOutputs["designer"] || "Yanıt alınamadı."}
+
+---
+
+Şimdi bu üç görüşü sentezleyerek kullanıcıya yönelik tek, tutarlı ve eksiksiz bir cevap üret:`;
+
+  let synthesisContent = "";
+  let synthStreamed = false;
+
+  for (const model of FALLBACK_MODELS) {
+    try {
+      const stream = await openrouter.chat.completions.create({
+        model,
+        max_tokens: 6000,
+        messages: [
+          { role: "system", content: synthesisSystem },
+          { role: "user", content: synthesisPrompt },
+        ],
+        stream: true,
+      });
+
+      for await (const chunk of stream) {
+        const c = chunk.choices[0]?.delta?.content;
+        if (c) {
+          synthesisContent += c;
+          send({ agent: "synthesis", label: "Sentez", content: c, status: "streaming" });
+        }
+      }
+
+      if (synthesisContent) {
+        synthStreamed = true;
+        break;
+      }
+    } catch {
+      await sleep(400);
+      continue;
+    }
+  }
+
+  if (!synthStreamed) {
+    synthesisContent = Object.values(agentOutputs).join("\n\n---\n\n");
+    send({ agent: "synthesis", label: "Sentez", content: synthesisContent, status: "streaming" });
+  }
+
+  send({ agent: "synthesis", label: "Sentez", status: "done" });
 
   if (conversationId) {
     try {
       await db.insert(messages).values([
-        { conversationId, role: "user", content: `Çok-ajan görevi: ${task}` },
-        { conversationId, role: "assistant", content: fullReport },
+        { conversationId, role: "user", content: task },
+        { conversationId, role: "assistant", content: synthesisContent },
       ]);
     } catch {}
   }

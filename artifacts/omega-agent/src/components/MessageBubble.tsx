@@ -4,16 +4,16 @@ import { MarkdownRenderer } from './MarkdownRenderer';
 import { Download, FileText } from 'lucide-react';
 import { IMG_MARKER } from '@/hooks/use-chat';
 
-// Gemini star for AI avatar
-function GeminiStar() {
+function OmegaAvatar() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
-      <path d="M12 2C12 2 13 9 18 12C13 15 12 22 12 22C12 22 11 15 6 12C11 9 12 2 12 2Z" fill="url(#msgGrad)"/>
+    <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
+      <circle cx="12" cy="10" r="6" stroke="url(#msgGrad)" strokeWidth="1.8"/>
+      <path d="M8 17c0-2.209 1.791-4 4-4s4 1.791 4 4" stroke="url(#msgGrad)" strokeWidth="1.8" strokeLinecap="round"/>
+      <path d="M6 17h12M9.5 17v2M14.5 17v2" stroke="url(#msgGrad)" strokeWidth="1.6" strokeLinecap="round"/>
       <defs>
-        <linearGradient id="msgGrad" x1="6" y1="2" x2="18" y2="22" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#4285F4"/>
-          <stop offset="0.5" stopColor="#9B72CB"/>
-          <stop offset="1" stopColor="#D96570"/>
+        <linearGradient id="msgGrad" x1="6" y1="4" x2="18" y2="22" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#00D4FF"/>
+          <stop offset="1" stopColor="#F5A623"/>
         </linearGradient>
       </defs>
     </svg>
@@ -27,7 +27,6 @@ interface MessageBubbleProps {
   isStreaming?: boolean;
 }
 
-// Detect image marker in content and extract URL
 function parseImageContent(content: string): { imageUrl: string | null; text: string } {
   if (content?.startsWith(IMG_MARKER)) {
     return { imageUrl: content.slice(IMG_MARKER.length).trim(), text: '' };
@@ -35,14 +34,12 @@ function parseImageContent(content: string): { imageUrl: string | null; text: st
   return { imageUrl: null, text: content };
 }
 
-// Detect embedded file context and extract filename + user question
-// Format: "[DOSYA: name | type | meta]\nİçerik:\n...\n---\nKullanıcı sorusu: question"
 function parseFileMessage(content: string): { fileName: string; fileType: string; question: string } | null {
   if (!content?.startsWith('[DOSYA:')) return null;
   try {
     const headerEnd = content.indexOf(']');
     if (headerEnd === -1) return null;
-    const header = content.slice(7, headerEnd); // after "[DOSYA:"
+    const header = content.slice(7, headerEnd);
     const parts = header.split('|').map(s => s.trim());
     const fileName = parts[0] ?? '';
     const fileType = parts[1] ?? '';
@@ -65,15 +62,17 @@ export function MessageBubble({ role, content, isStreaming }: MessageBubbleProps
       return (
         <div className="flex justify-end px-4 md:px-8 py-2 animate-fade-up">
           <div className="max-w-[80%] md:max-w-[70%] flex flex-col gap-2 items-end">
-            <div className="flex items-center gap-2 px-3 py-2 bg-secondary/70 border border-border rounded-xl text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 px-3 py-2 bg-secondary/60 border border-border/60 rounded-xl text-sm text-muted-foreground">
               <FileText className="w-4 h-4 flex-shrink-0 text-primary" />
-              <span className="truncate max-w-[200px]">{fileMsg.fileName}</span>
+              <span className="truncate max-w-[200px] text-foreground/70">{fileMsg.fileName}</span>
               {fileMsg.fileType && (
-                <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full flex-shrink-0">{fileMsg.fileType}</span>
+                <span className="text-[11px] bg-primary/10 text-primary/80 px-2 py-0.5 rounded-full flex-shrink-0 font-medium">
+                  {fileMsg.fileType}
+                </span>
               )}
             </div>
             {fileMsg.question && (
-              <div className="bg-primary/15 border border-primary/20 rounded-3xl rounded-tr-md px-5 py-3.5 text-[15px] leading-relaxed text-foreground/90 whitespace-pre-wrap">
+              <div className="bg-secondary border border-border/60 rounded-2xl rounded-tr-sm px-4 py-3 text-[15px] leading-relaxed text-foreground/85 whitespace-pre-wrap">
                 {fileMsg.question}
               </div>
             )}
@@ -81,10 +80,11 @@ export function MessageBubble({ role, content, isStreaming }: MessageBubbleProps
         </div>
       );
     }
+
     return (
       <div className="flex justify-end px-4 md:px-8 py-2 animate-fade-up">
         <div className="max-w-[80%] md:max-w-[70%]">
-          <div className="bg-primary/15 border border-primary/20 rounded-3xl rounded-tr-md px-5 py-3.5 text-[15px] leading-relaxed text-foreground/90 whitespace-pre-wrap">
+          <div className="bg-secondary border border-border/60 rounded-2xl rounded-tr-sm px-4 py-3 text-[15px] leading-relaxed text-foreground/85 whitespace-pre-wrap">
             {content}
           </div>
         </div>
@@ -93,32 +93,32 @@ export function MessageBubble({ role, content, isStreaming }: MessageBubbleProps
   }
 
   return (
-    <div className="flex gap-3 px-4 md:px-8 py-3 animate-fade-up">
+    <div className="flex gap-3 px-4 md:px-8 py-3 animate-fade-up group">
       {/* Avatar */}
-      <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-primary/20 flex items-center justify-center mt-0.5">
-        <GeminiStar />
+      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-primary/15 to-accent/10 border border-primary/15 flex items-center justify-center mt-0.5">
+        <OmegaAvatar />
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className="text-sm font-semibold gemini-gradient">Omega</span>
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-sm font-semibold omega-gradient font-display">Omega</span>
           {isStreaming && (
-            <span className="flex gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
-              <span className="w-1.5 h-1.5 rounded-full bg-accent animate-bounce" style={{ animationDelay: '150ms' }} />
-              <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+            <span className="flex gap-1 items-center">
+              <span className="typing-dot w-1.5 h-1.5 rounded-full bg-primary/60" />
+              <span className="typing-dot w-1.5 h-1.5 rounded-full bg-primary/60" />
+              <span className="typing-dot w-1.5 h-1.5 rounded-full bg-primary/60" />
             </span>
           )}
         </div>
 
-        {/* Image (from marker) */}
+        {/* Image */}
         {imageUrl && (
-          <div className="mb-3 group relative inline-block">
+          <div className="mb-3 group/img relative inline-block">
             <img
               src={imageUrl}
               alt="Üretilen görsel"
-              className="rounded-2xl max-w-md w-full shadow-xl border border-border/50"
+              className="rounded-2xl max-w-md w-full shadow-xl border border-border/40"
               loading="lazy"
             />
             <a
@@ -126,7 +126,7 @@ export function MessageBubble({ role, content, isStreaming }: MessageBubbleProps
               download
               target="_blank"
               rel="noopener noreferrer"
-              className="absolute top-2 right-2 p-2 rounded-full bg-black/60 backdrop-blur-md border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80"
+              className="absolute top-2 right-2 p-2 rounded-full bg-black/60 backdrop-blur-md border border-white/10 opacity-0 group-hover/img:opacity-100 transition-opacity hover:bg-black/80"
               title="İndir"
             >
               <Download className="w-4 h-4 text-white" />
@@ -136,7 +136,7 @@ export function MessageBubble({ role, content, isStreaming }: MessageBubbleProps
 
         {/* Text content */}
         {text && (
-          <div className="text-[15px] leading-relaxed">
+          <div className="prose text-[15px]">
             <MarkdownRenderer content={text} />
           </div>
         )}

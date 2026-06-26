@@ -18,6 +18,7 @@ export function useChatStream(conversationId: number | null) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentStreamedText, setCurrentStreamedText] = useState("");
   const [multiTaskEvents, setMultiTaskEvents] = useState<MultiTaskEvent[]>([]);
+  const [synthesisText, setSynthesisText] = useState("");
   const abortControllerRef = useRef<AbortController | null>(null);
   const queryClient = useQueryClient();
 
@@ -42,16 +43,13 @@ export function useChatStream(conversationId: number | null) {
     if (!conversationId) return;
 
     // ── Image message path ────────────────────────────────────────────────
-    // Save user prompt + assistant image directly to DB without running AI.
     if (imageUrl) {
       try {
-        // Save user message
         await fetch(`/api/openai/conversations/${conversationId}/save-message`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ role: 'user', content }),
         });
-        // Save assistant image message using special marker so it persists
         await fetch(`/api/openai/conversations/${conversationId}/save-message`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -60,9 +58,7 @@ export function useChatStream(conversationId: number | null) {
             content: `${IMG_MARKER}${imageUrl}`,
           }),
         });
-      } catch {
-        // Silently continue — images still show via query refetch
-      }
+      } catch {}
       invalidateConversation();
       return;
     }
@@ -71,6 +67,7 @@ export function useChatStream(conversationId: number | null) {
     setIsStreaming(true);
     setCurrentStreamedText("");
     setMultiTaskEvents([]);
+    setSynthesisText("");
 
     abortControllerRef.current = new AbortController();
 
@@ -116,19 +113,39 @@ export function useChatStream(conversationId: number | null) {
               setCurrentStreamedText(prev => prev + "\n\n⚠️ " + data.error);
               break;
             }
+
             if (isMulti && data.agent) {
-              setMultiTaskEvents(prev => {
-                const idx = prev.findIndex(e => e.agent === data.agent);
-                if (idx >= 0) {
-                  const arr = [...prev];
-                  arr[idx] = { ...arr[idx], ...data };
-                  if (data.content && data.status === 'streaming') {
-                    arr[idx].content = (arr[idx].content || '') + (data.content || '');
-                  }
-                  return arr;
+              if (data.agent === "synthesis") {
+                // Sentez cevabı ayrı state'e yaz
+                if (data.content && data.status === 'streaming') {
+                  setSynthesisText(prev => prev + data.content);
                 }
-                return [...prev, data];
-              });
+                // Sentez olayını da multi-events'e ekle (durum göstergesi için)
+                setMultiTaskEvents(prev => {
+                  const idx = prev.findIndex(e => e.agent === "synthesis");
+                  const updated = { ...data };
+                  if (idx >= 0) {
+                    const arr = [...prev];
+                    arr[idx] = { ...arr[idx], status: data.status, label: data.label };
+                    return arr;
+                  }
+                  return [...prev, { agent: "synthesis", label: data.label, status: data.status }];
+                });
+              } else {
+                // Normal ajan cevabı
+                setMultiTaskEvents(prev => {
+                  const idx = prev.findIndex(e => e.agent === data.agent);
+                  if (idx >= 0) {
+                    const arr = [...prev];
+                    arr[idx] = { ...arr[idx], status: data.status, label: data.label };
+                    if (data.content && data.status === 'streaming') {
+                      arr[idx].content = (arr[idx].content || '') + (data.content || '');
+                    }
+                    return arr;
+                  }
+                  return [...prev, { ...data, content: data.content || '' }];
+                });
+              }
             } else if (data.content) {
               setCurrentStreamedText(prev => prev + data.content);
             }
@@ -142,8 +159,9 @@ export function useChatStream(conversationId: number | null) {
       setIsStreaming(false);
       setCurrentStreamedText("");
       setMultiTaskEvents([]);
+      setSynthesisText("");
     }
   }, [conversationId, invalidateConversation]);
 
-  return { sendMessage, isStreaming, currentStreamedText, multiTaskEvents, stopStream };
+  return { sendMessage, isStreaming, currentStreamedText, multiTaskEvents, synthesisText, stopStream };
 }

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
@@ -6,6 +6,8 @@ import { Sidebar } from "@/components/Sidebar";
 import Home from "@/pages/Home";
 import ChatPage from "@/pages/Chat";
 import { SecurityGuard } from "@/components/SecurityGuard";
+import { AuthScreen } from "@/pages/AuthScreen";
+import { getUser } from "@/lib/auth";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,12 +20,7 @@ const queryClient = new QueryClient({
   },
 });
 
-// Mobile sidebar context
-interface SidebarCtx {
-  open: boolean;
-  toggle: () => void;
-  close: () => void;
-}
+interface SidebarCtx { open: boolean; toggle: () => void; close: () => void; }
 export const SidebarContext = createContext<SidebarCtx>({ open: false, toggle: () => {}, close: () => {} });
 export const useSidebar = () => useContext(SidebarContext);
 
@@ -40,30 +37,14 @@ function NotFound() {
 
 function MainLayout({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
-  const toggle = () => setOpen(p => !p);
-  const close = () => setOpen(false);
-
   return (
-    <SidebarContext.Provider value={{ open, toggle, close }}>
+    <SidebarContext.Provider value={{ open, toggle: () => setOpen(p => !p), close: () => setOpen(false) }}>
       <div className="flex h-screen w-full bg-background overflow-hidden relative">
-        {/* Mobile overlay */}
-        {open && (
-          <div className="sidebar-overlay md:hidden" onClick={close} />
-        )}
-
-        {/* Sidebar */}
-        <div className={`
-          fixed md:relative z-50 md:z-auto h-full
-          transform transition-transform duration-300 ease-in-out
-          ${open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-        `}>
+        {open && <div className="sidebar-overlay md:hidden" onClick={() => setOpen(false)} />}
+        <div className={`fixed md:relative z-50 md:z-auto h-full transform transition-transform duration-300 ease-in-out ${open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
           <Sidebar />
         </div>
-
-        {/* Main */}
-        <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          {children}
-        </main>
+        <main className="flex-1 flex flex-col min-w-0 overflow-hidden">{children}</main>
       </div>
     </SidebarContext.Provider>
   );
@@ -82,6 +63,23 @@ function Router() {
 }
 
 export default function App() {
+  const [authed, setAuthed] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    setAuthed(!!getUser());
+  }, []);
+
+  if (authed === null) return null; // brief flicker guard
+
+  if (!authed) {
+    return (
+      <>
+        <AuthScreen onAuth={() => setAuthed(true)} />
+        <Toaster theme="dark" position="top-center" toastOptions={{ style: { background: "hsl(0 0% 10%)", border: "1px solid hsl(0 0% 18%)", color: "hsl(0 0% 88%)", borderRadius: "10px", fontSize: "13px" } }} />
+      </>
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>

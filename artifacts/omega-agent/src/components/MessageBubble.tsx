@@ -2,27 +2,7 @@ import React from 'react';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { Download, FileText } from 'lucide-react';
 import { IMG_MARKER } from '@/hooks/use-chat';
-
-/* ── Omega avatar mark ── */
-function OmegaMark() {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className="w-3.5 h-3.5">
-      <circle cx="10" cy="9" r="5.5" stroke="hsl(195 100% 45%)" strokeWidth="1.6" />
-      <path
-        d="M6 15c0-2.21 1.79-4 4-4s4 1.79 4 4"
-        stroke="hsl(195 100% 45%)"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-      <path
-        d="M4 15h12M7.5 15v2M12.5 15v2"
-        stroke="hsl(195 100% 45%)"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
+import { OmegaLogo } from './Sidebar';
 
 interface MessageBubbleProps {
   role: 'user' | 'assistant';
@@ -127,14 +107,8 @@ export function MessageBubble({ role, content, isStreaming }: MessageBubbleProps
   return (
     <div className="flex gap-3 px-4 md:px-10 py-4 animate-fade-up group/msg">
       {/* Avatar */}
-      <div
-        className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5"
-        style={{
-          background: 'hsl(195 100% 45% / 0.08)',
-          border: '1px solid hsl(195 100% 45% / 0.18)',
-        }}
-      >
-        <OmegaMark />
+      <div className="flex-shrink-0 mt-0.5">
+        <OmegaLogo size={30} />
       </div>
 
       {/* Content */}

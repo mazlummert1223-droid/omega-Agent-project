@@ -242,8 +242,64 @@ router.post("/conversations/:id/messages", async (req, res) => {
   res.end();
 });
 
+/* ─── Stateless stream endpoint — no DB writes, local storage friendly ─── */
+router.post("/stream-stateless", async (req, res) => {
+  const { messages = [], agentMode = "auto" } = req.body as {
+    messages: { role: "user" | "assistant"; content: string }[];
+    agentMode: string;
+  };
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  const { modelList, systemPrompt } = getConfig(agentMode);
+
+  // Web search for researcher mode
+  let webContext = "";
+  if (agentMode === "researcher") {
+    const lastUser = [...messages].reverse().find(m => m.role === "user");
+    if (lastUser) {
+      res.write(`data: ${JSON.stringify({ content: "🔍 Web araştırması yapılıyor...\n\n" })}\n\n`);
+      try {
+        const searchRes = await fetch(`http://localhost:${process.env["PORT"] || 8080}/api/search/web`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: lastUser.content }),
+        });
+        if (searchRes.ok) {
+          const data = await searchRes.json();
+          if (Array.isArray(data.results) && data.results.length) {
+            webContext = "\n\nGÜNCEL WEB ARAMA SONUÇLARI:\n" +
+              data.results.slice(0, 6).map((r: any, i: number) =>
+                `${i + 1}. ${r.title}\n   ${r.snippet}\n   Kaynak: ${r.url}`
+              ).join("\n\n") +
+              "\n\nBu sonuçları kullanarak detaylı, kaynak gösteren bir yanıt ver.";
+          }
+        }
+      } catch {}
+    }
+  }
+
+  const chatMessages = [
+    { role: "system" as const, content: systemPrompt + webContext },
+    ...messages,
+  ];
+
+  try {
+    await callWithFallback(modelList, chatMessages, (chunk) => {
+      res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);
+    });
+  } catch {
+    res.write(`data: ${JSON.stringify({ content: "Bağlantı hatası oluştu. Lütfen tekrar dene." })}\n\n`);
+  }
+
+  res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+  res.end();
+});
+
 function getConfig(agentMode: string): { modelList: string[]; systemPrompt: string } {
-  const base = `Sen Omega AI Agent'sın - Türkçe konuşan, akıllı ve yetenekli bir yapay zeka asistanısın.
+  const base = `Sen Omega AI'sın - Türkçe konuşan, son derece akıllı ve yetenekli bir yapay zeka asistanısın.
 - Her zaman Türkçe yanıt ver
 - Kullanıcının her türlü sorusuna yardımcı ol, kısıtlama yok
 - Detaylı, kapsamlı ve yardımsever yanıtlar ver
@@ -259,27 +315,34 @@ function getConfig(agentMode: string): { modelList: string[]; systemPrompt: stri
     case "coder":
       return {
         modelList: CODER_PRIORITY,
-        systemPrompt: `${base}\n\nKODCU MODUndasın: Her programlama dilinde uzman kod yazarsın. Tam çalışır kod + Türkçe açıklama sunar, en iyi pratikleri kullanırsın.`,
+        systemPrompt: `${base}\n\nKOD MÜHENDİSİ MODUndasın: Her programlama dilinde uzman kod yazarsın. Tam çalışır kod + Türkçe açıklama sunar, en iyi pratikleri kullanırsın.`,
       };
-    case "designer":
+    case "quantum":
       return {
-        modelList: MODEL_PRIORITY,
-        systemPrompt: `${base}\n\nTASARIMCI MODUndasın: UI/UX ve görsel tasarım uzmanısın. HTML/CSS/Tailwind örnekleri yazar, renk paletleri ve tipografi önerileri sunarsın.`,
+        modelList: [
+          "nousresearch/hermes-3-llama-3.1-405b:free",
+          "qwen/qwen3-next-80b-a3b-instruct:free",
+          "inclusionai/ling-2.6-1t:free",
+          "meta-llama/llama-3.3-70b-instruct:free",
+          "google/gemma-4-31b-it:free",
+          "tencent/hy3-preview:free",
+        ],
+        systemPrompt: `${base}\n\nOMEGA QUANTUM MODUndasın: En gelişmiş analiz ve akıl yürütme kapasitesiyle çalışırsın. Çok katmanlı düşünür, her konuyu derin ve sistematik şekilde ele alırsın. Karmaşık sorunları adım adım çözer, alternatif yaklaşımlar sunar, ve en doğru sonuca ulaşırsın. Yanıtların diğer modellerin ötesinde detaylı ve kesin olur.`,
       };
     case "multi":
       return {
         modelList: MODEL_PRIORITY,
-        systemPrompt: `${base}\n\nÇOK-AJAN ORKESTRATÖRSün: Karmaşık görevleri hem araştırma (## Araştırma) hem kod (## Kod) hem tasarım (## Tasarım) açısından bölümler halinde çözersin.`,
+        systemPrompt: `${base}\n\nOMEGA AGENT MODUndasın: Karmaşık görevleri hem araştırma (## Araştırma) hem kod (## Kod) hem strateji (## Strateji) açısından bölümler halinde çözersin.`,
       };
     case "video":
       return {
         modelList: MODEL_PRIORITY,
-        systemPrompt: `${base}\n\nVİDEO YAPIMCI MODUndasın: Detaylı video scriptleri, sahne açıklamaları ve storyboard'lar oluşturursun. Her sahne için: görsel açıklama, diyalog, müzik önerileri ve efekt notları eklersin.`,
+        systemPrompt: `${base}\n\nVİDEO YAPIMCI MODUndasın: Detaylı video scriptleri, sahne açıklamaları ve storyboard'lar oluşturursun.`,
       };
     default:
       return {
         modelList: MODEL_PRIORITY,
-        systemPrompt: `${base}\n\nHer türlü konuda yardımcı olursun: araştırma, kod, yaratıcı yazı, analiz, matematik, tarih, bilim, sanat - ne olursa olsun.`,
+        systemPrompt: `${base}\n\nOMEGA ORİGİNS MODUndasın: Her türlü konuda yardımcı olursun — araştırma, kod, yaratıcı yazı, analiz, matematik, tarih, bilim, sanat, tasarım.`,
       };
   }
 }

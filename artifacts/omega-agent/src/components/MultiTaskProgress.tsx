@@ -3,6 +3,7 @@ import { MultiTaskEvent } from '@/hooks/use-chat';
 import { CheckCircle2, Loader2, AlertCircle, ChevronRight, ChevronDown, Brain, Search, Code2, Target, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import { OmegaLogo } from './Sidebar';
 
 interface MultiTaskProgressProps {
   events: MultiTaskEvent[];
@@ -10,21 +11,11 @@ interface MultiTaskProgressProps {
 }
 
 const AGENT_CFG = {
-  researcher: { icon: <Search className="w-3.5 h-3.5" />,  label: 'Araştırmacı', color: 'hsl(200 90% 50%)', bg: 'hsl(200 90% 50% / 0.08)' },
-  coder:      { icon: <Code2  className="w-3.5 h-3.5" />,  label: 'Mühendis',    color: 'hsl(150 65% 48%)', bg: 'hsl(150 65% 48% / 0.08)' },
-  designer:   { icon: <Target className="w-3.5 h-3.5" />,  label: 'Stratejist',  color: 'hsl(38 90% 58%)',  bg: 'hsl(38 90% 58% / 0.08)'  },
-  synthesis:  { icon: <Brain  className="w-3.5 h-3.5" />,  label: 'Sentez',      color: 'hsl(195 100% 45%)',bg: 'hsl(195 100% 45% / 0.08)' },
+  researcher: { icon: <Search className="w-3.5 h-3.5" />,  label: 'Araştırmacı', color: '#0EA5E9', bg: 'rgba(14,165,233,0.08)' },
+  coder:      { icon: <Code2  className="w-3.5 h-3.5" />,  label: 'Mühendis',    color: '#22C55E', bg: 'rgba(34,197,94,0.08)'  },
+  designer:   { icon: <Target className="w-3.5 h-3.5" />,  label: 'Stratejist',  color: '#F59E0B', bg: 'rgba(245,158,11,0.08)' },
+  synthesis:  { icon: <Brain  className="w-3.5 h-3.5" />,  label: 'Sentez',      color: '#00A3CC', bg: 'rgba(0,163,204,0.08)'  },
 };
-
-function OmegaMark() {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className="w-3.5 h-3.5">
-      <circle cx="10" cy="9" r="5.5" stroke="hsl(195 100% 45%)" strokeWidth="1.6" />
-      <path d="M6 15c0-2.21 1.79-4 4-4s4 1.79 4 4" stroke="hsl(195 100% 45%)" strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M4 15h12M7.5 15v2M12.5 15v2" stroke="hsl(195 100% 45%)" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 export function MultiTaskProgress({ events, synthesisText }: MultiTaskProgressProps) {
   const [open, setOpen] = useState(false);
@@ -42,11 +33,13 @@ export function MultiTaskProgress({ events, synthesisText }: MultiTaskProgressPr
   return (
     <div className="flex gap-3 px-4 md:px-10 py-4 animate-fade-up">
       {/* Avatar */}
-      <div
-        className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5"
-        style={{ background: 'hsl(195 100% 45% / 0.08)', border: '1px solid hsl(195 100% 45% / 0.18)' }}
-      >
-        {isDone ? <OmegaMark /> : <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: 'hsl(195 100% 45%)' }} />}
+      <div className="flex-shrink-0 mt-0.5 relative">
+        <OmegaLogo size={30} />
+        {!isDone && (
+          <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center" style={{ background: '#0A0A0A' }}>
+            <Loader2 className="w-2.5 h-2.5 animate-spin" style={{ color: '#00A3CC' }} />
+          </div>
+        )}
       </div>
 
       <div className="flex-1 min-w-0 space-y-3 pt-0.5">

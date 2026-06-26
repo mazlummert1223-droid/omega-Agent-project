@@ -1,44 +1,27 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'wouter';
-import { useGetOpenaiConversation } from '@workspace/api-client-react';
-import { useChatStream } from '@/hooks/use-chat';
+import { useChatStream, useLocalConversation } from '@/hooks/use-chat';
 import { MessageBubble } from '@/components/MessageBubble';
 import { ChatInput } from '@/components/ChatInput';
 import { MultiTaskProgress } from '@/components/MultiTaskProgress';
 import { VideoGenerator } from '@/components/VideoGenerator';
 import { useSidebar } from '@/App';
-import { Loader2, AlertCircle, Menu, Image as ImageIcon } from 'lucide-react';
+import { OmegaLogo } from '@/components/Sidebar';
+import { Loader2, Menu } from 'lucide-react';
 
-function OmegaAvatar() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
-      <circle cx="12" cy="10" r="6" stroke="url(#avGrad)" strokeWidth="1.8"/>
-      <path d="M8 17c0-2.209 1.791-4 4-4s4 1.791 4 4" stroke="url(#avGrad)" strokeWidth="1.8" strokeLinecap="round"/>
-      <path d="M6 17h12M9.5 17v2M14.5 17v2" stroke="url(#avGrad)" strokeWidth="1.6" strokeLinecap="round"/>
-      <defs>
-        <linearGradient id="avGrad" x1="6" y1="4" x2="18" y2="22" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#00D4FF"/>
-          <stop offset="1" stopColor="#F5A623"/>
-        </linearGradient>
-      </defs>
-    </svg>
-  );
-}
+function OmegaAvatar() { return <OmegaLogo size={28} />; }
 
 export default function ChatPage() {
   const { id } = useParams();
-  const convId = parseInt(id || '0', 10);
+  const convId = id || null;
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toggle } = useSidebar();
   const [videoPrompt, setVideoPrompt] = useState<string | null>(null);
   const [pendingImage, setPendingImage] = useState<{ prompt: string; style: string } | null>(null);
 
-  const { data: conversation, isLoading, isError, refetch } = useGetOpenaiConversation(convId, {
-    query: { retry: 3, retryDelay: 600 },
-  });
+  const { data: conversation, loading } = useLocalConversation(convId);
   const { sendMessage, isStreaming, currentStreamedText, multiTaskEvents, synthesisText, stopStream } = useChatStream(convId);
 
-  // Resim üretme handler - önce yer tutucu göster, sonra üret
   const handleImageGenerate = async (prompt: string, style: string) => {
     setPendingImage({ prompt, style });
     try {
@@ -54,36 +37,32 @@ export default function ChatPage() {
         throw new Error('no url');
       }
     } catch {
-      // Hata - sadece düz mesaj gönder
       await sendMessage(prompt, 'auto');
     } finally {
       setPendingImage(null);
     }
   };
 
-  // Check for initial prompt from Home page suggestion click
   useEffect(() => {
+    if (!convId) return;
     const key = `chat_${convId}_init`;
     const stored = sessionStorage.getItem(key);
     if (stored) {
       sessionStorage.removeItem(key);
       try {
         const { prompt, mode } = JSON.parse(stored);
-        if (prompt) {
-          setTimeout(() => sendMessage(prompt, mode), 300);
-        }
+        if (prompt) setTimeout(() => sendMessage(prompt, mode), 300);
       } catch {}
     }
   }, [convId]);
 
-  // Auto-scroll
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, [conversation?.messages, currentStreamedText, multiTaskEvents]);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <Loader2 className="w-7 h-7 text-primary animate-spin" />
@@ -91,34 +70,21 @@ export default function ChatPage() {
     );
   }
 
-  if (isError || !conversation) {
+  if (!conversation) {
     return (
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="bg-card border border-border rounded-2xl p-8 flex flex-col items-center gap-3 text-center max-w-sm">
-          <AlertCircle className="w-10 h-10 text-destructive" />
-          <h2 className="font-semibold text-lg">Sohbet Yüklenemedi</h2>
-          <p className="text-muted-foreground text-sm">Bağlantı sorunu olabilir. Tekrar deneyebilir veya ana sayfaya dönebilirsin.</p>
-          <div className="flex gap-2 mt-2">
-            <button
-              onClick={() => refetch()}
-              className="px-4 py-2 rounded-full bg-primary hover:bg-primary/90 text-white text-sm font-medium"
-            >
-              Tekrar Dene
-            </button>
-            <a
-              href="/"
-              className="px-4 py-2 rounded-full bg-secondary hover:bg-secondary/80 text-foreground text-sm font-medium"
-            >
-              Ana Sayfa
-            </a>
-          </div>
+          <h2 className="font-semibold text-lg">Sohbet Bulunamadı</h2>
+          <a href="/" className="px-4 py-2 rounded-full bg-primary hover:bg-primary/90 text-white text-sm font-medium">
+            Ana Sayfa
+          </a>
         </div>
       </div>
     );
   }
 
   const allMessages = (conversation.messages || []).map(m => ({
-    id: String(m.id),
+    id: m.id,
     role: m.role as 'user' | 'assistant',
     content: m.content,
     createdAt: m.createdAt,
@@ -129,16 +95,13 @@ export default function ChatPage() {
       {/* Mobile Header */}
       <div
         className="md:hidden flex items-center gap-3 px-4 py-3"
-        style={{ borderBottom: '1px solid hsl(0 0% 12%)', background: 'hsl(0 0% 5%)' }}
+        style={{ borderBottom: '1px solid #181818', background: '#0A0A0A' }}
       >
-        <button
-          onClick={toggle}
-          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-        >
+        <button onClick={toggle} className="p-1.5 rounded-lg transition-colors" style={{ color: '#555' }}>
           <Menu className="w-5 h-5" />
         </button>
         <OmegaAvatar />
-        <span className="font-semibold text-[14px] font-display" style={{ color: 'hsl(195 100% 45%)' }}>
+        <span className="font-display font-semibold text-[14px] truncate" style={{ color: '#E0E0E0' }}>
           {conversation.title || 'Sohbet'}
         </span>
       </div>
@@ -156,8 +119,7 @@ export default function ChatPage() {
                   <path d="M12 42h32M20 42v4M36 42v4" stroke="url(#emptyGrad)" strokeWidth="2.5" strokeLinecap="round"/>
                   <defs>
                     <linearGradient id="emptyGrad" x1="12" y1="8" x2="44" y2="52" gradientUnits="userSpaceOnUse">
-                      <stop stopColor="#00D4FF"/>
-                      <stop offset="1" stopColor="#F5A623"/>
+                      <stop stopColor="#00D4FF"/><stop offset="1" stopColor="#F5A623"/>
                     </linearGradient>
                   </defs>
                 </svg>
@@ -169,47 +131,30 @@ export default function ChatPage() {
             </div>
           ) : (
             allMessages.map(msg => (
-              <MessageBubble
-                key={msg.id}
-                role={msg.role}
-                content={msg.content}
-                createdAt={msg.createdAt}
-              />
+              <MessageBubble key={msg.id} role={msg.role} content={msg.content} createdAt={msg.createdAt} />
             ))
           )}
 
-          {/* Multi-task streaming */}
           {(multiTaskEvents.length > 0 || synthesisText) && (
             <MultiTaskProgress events={multiTaskEvents} synthesisText={synthesisText} />
           )}
 
-          {/* Resim üretme yer tutucusu - kullanıcı msg + animasyonlu kart */}
           {pendingImage && (
             <>
               <MessageBubble role="user" content={pendingImage.prompt} />
               <div className="flex gap-3 px-4 md:px-10 py-4 animate-fade-up">
-                <div
-                  className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5"
-                  style={{ background: 'hsl(195 100% 45% / 0.08)', border: '1px solid hsl(195 100% 45% / 0.18)' }}
-                >
+                <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5"
+                  style={{ background: 'hsl(195 100% 45% / 0.08)', border: '1px solid hsl(195 100% 45% / 0.18)' }}>
                   <OmegaAvatar />
                 </div>
                 <div className="flex-1 max-w-xs pt-0.5">
                   <div className="text-[13px] font-semibold font-display mb-2.5" style={{ color: 'hsl(195 100% 45%)' }}>Omega</div>
-                  <div
-                    className="relative rounded-xl overflow-hidden shimmer"
-                    style={{
-                      aspectRatio: '1/1',
-                      maxWidth: '280px',
-                      background: 'hsl(0 0% 9%)',
-                      border: '1px solid hsl(0 0% 16%)',
-                    }}
-                  >
+                  <div className="relative rounded-xl overflow-hidden shimmer"
+                    style={{ aspectRatio: '1/1', maxWidth: '280px', background: 'hsl(0 0% 9%)', border: '1px solid hsl(0 0% 16%)' }}>
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
                       <Loader2 className="w-7 h-7 animate-spin" style={{ color: 'hsl(195 100% 45% / 0.5)' }} />
                       <p className="text-[12px] text-center px-4" style={{ color: 'hsl(0 0% 40%)' }}>
-                        Görsel üretiliyor…<br/>
-                        <span style={{ color: 'hsl(0 0% 30%)' }}>{pendingImage.style !== 'default' ? pendingImage.style : ''}</span>
+                        Görsel üretiliyor…
                       </p>
                     </div>
                   </div>
@@ -218,22 +163,14 @@ export default function ChatPage() {
             </>
           )}
 
-          {/* Regular text stream */}
           {isStreaming && currentStreamedText && (
-            <MessageBubble
-              role="assistant"
-              content={currentStreamedText}
-              isStreaming={true}
-            />
+            <MessageBubble role="assistant" content={currentStreamedText} isStreaming={true} />
           )}
 
-          {/* Streaming indicator when no text yet */}
           {isStreaming && !currentStreamedText && multiTaskEvents.length === 0 && (
             <div className="flex gap-3 px-4 md:px-10 py-4 animate-fade-up">
-              <div
-                className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5"
-                style={{ background: 'hsl(195 100% 45% / 0.08)', border: '1px solid hsl(195 100% 45% / 0.18)' }}
-              >
+              <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5"
+                style={{ background: 'hsl(195 100% 45% / 0.08)', border: '1px solid hsl(195 100% 45% / 0.18)' }}>
                 <OmegaAvatar />
               </div>
               <div className="flex items-center gap-1.5 pt-2">
@@ -244,7 +181,6 @@ export default function ChatPage() {
             </div>
           )}
 
-          {/* Bottom padding */}
           <div className="h-4" />
         </div>
       </div>
@@ -261,12 +197,8 @@ export default function ChatPage() {
         />
       </div>
 
-      {/* Video Generator Modal */}
       {videoPrompt !== null && (
-        <VideoGenerator
-          prompt={videoPrompt}
-          onClose={() => setVideoPrompt(null)}
-        />
+        <VideoGenerator prompt={videoPrompt} onClose={() => setVideoPrompt(null)} />
       )}
     </div>
   );

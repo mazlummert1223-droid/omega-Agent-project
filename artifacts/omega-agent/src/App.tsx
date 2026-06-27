@@ -5,6 +5,10 @@ import { Toaster } from "sonner";
 import { Sidebar } from "@/components/Sidebar";
 import Home from "@/pages/Home";
 import ChatPage from "@/pages/Chat";
+import AgentsPage from "@/pages/Agents";
+import ModelsPage from "@/pages/Models";
+import KnowledgePage from "@/pages/Knowledge";
+import ToolsPage from "@/pages/Tools";
 import { SecurityGuard } from "@/components/SecurityGuard";
 import { AuthScreen } from "@/pages/AuthScreen";
 import { getUser } from "@/lib/auth";
@@ -56,6 +60,10 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/chat/:id" component={ChatPage} />
+        <Route path="/agents" component={AgentsPage} />
+        <Route path="/models" component={ModelsPage} />
+        <Route path="/knowledge" component={KnowledgePage} />
+        <Route path="/tools" component={ToolsPage} />
         <Route component={NotFound} />
       </Switch>
     </MainLayout>

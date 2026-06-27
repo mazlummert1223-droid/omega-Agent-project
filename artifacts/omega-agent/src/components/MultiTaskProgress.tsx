@@ -14,7 +14,7 @@ const AGENT_CFG = {
   researcher: { icon: <Search className="w-3.5 h-3.5" />,  label: 'Araştırmacı', color: '#0EA5E9', bg: 'rgba(14,165,233,0.08)' },
   coder:      { icon: <Code2  className="w-3.5 h-3.5" />,  label: 'Mühendis',    color: '#22C55E', bg: 'rgba(34,197,94,0.08)'  },
   designer:   { icon: <Target className="w-3.5 h-3.5" />,  label: 'Stratejist',  color: '#F59E0B', bg: 'rgba(245,158,11,0.08)' },
-  synthesis:  { icon: <Brain  className="w-3.5 h-3.5" />,  label: 'Sentez',      color: '#00A3CC', bg: 'rgba(0,163,204,0.08)'  },
+  synthesis:  { icon: <Brain  className="w-3.5 h-3.5" />,  label: 'Sentez',      color: '#D4893A', bg: 'rgba(0,163,204,0.08)'  },
 };
 
 export function MultiTaskProgress({ events, synthesisText }: MultiTaskProgressProps) {
@@ -37,7 +37,7 @@ export function MultiTaskProgress({ events, synthesisText }: MultiTaskProgressPr
         <OmegaLogo size={30} />
         {!isDone && (
           <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center" style={{ background: '#0A0A0A' }}>
-            <Loader2 className="w-2.5 h-2.5 animate-spin" style={{ color: '#00A3CC' }} />
+            <Loader2 className="w-2.5 h-2.5 animate-spin" style={{ color: '#D4893A' }} />
           </div>
         )}
       </div>
@@ -45,7 +45,7 @@ export function MultiTaskProgress({ events, synthesisText }: MultiTaskProgressPr
       <div className="flex-1 min-w-0 space-y-3 pt-0.5">
         {/* Header row */}
         <div className="flex items-center gap-2.5 flex-wrap">
-          <span className="text-[13px] font-semibold font-display" style={{ color: 'hsl(195 100% 45%)' }}>
+          <span className="text-[13px] font-semibold font-display" style={{ color: '#D4893A' }}>
             Omega
           </span>
           <span
@@ -60,7 +60,7 @@ export function MultiTaskProgress({ events, synthesisText }: MultiTaskProgressPr
             </span>
           )}
           {isSynthRunning && (
-            <span className="flex items-center gap-1.5 text-[12px]" style={{ color: 'hsl(195 100% 45%)' }}>
+            <span className="flex items-center gap-1.5 text-[12px]" style={{ color: '#D4893A' }}>
               <Sparkles className="w-3 h-3" />
               Görüşler birleştiriliyor…
             </span>
@@ -161,7 +161,7 @@ export function MultiTaskProgress({ events, synthesisText }: MultiTaskProgressPr
 
         {/* Synthesis loading */}
         {isSynthRunning && !synthesisText && (
-          <div className="flex items-center gap-2 text-[12px]" style={{ color: 'hsl(195 100% 45% / 0.7)' }}>
+          <div className="flex items-center gap-2 text-[12px]" style={{ color: 'rgba(212,137,58,0.7)' }}>
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
             Tüm görüşler sentezleniyor, tek yanıt hazırlanıyor…
           </div>
@@ -180,9 +180,9 @@ export function MultiTaskProgress({ events, synthesisText }: MultiTaskProgressPr
               <MarkdownRenderer content={synthesisText} />
               {isSynthRunning && (
                 <span className="inline-flex items-center gap-0.5 ml-1">
-                  <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'hsl(195 100% 45% / 0.55)' }} />
-                  <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'hsl(195 100% 45% / 0.55)' }} />
-                  <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'hsl(195 100% 45% / 0.55)' }} />
+                  <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(212,137,58,0.55)' }} />
+                  <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(212,137,58,0.55)' }} />
+                  <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(212,137,58,0.55)' }} />
                 </span>
               )}
             </div>

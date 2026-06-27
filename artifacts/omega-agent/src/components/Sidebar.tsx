@@ -1,41 +1,70 @@
 import React, { useState } from 'react';
-import { Trash2, Loader2, X, LogOut, SquarePen, MessageSquare, User } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Trash2, Loader2, X, Plus, Home, Users, Cpu, BookOpen, Wrench, ChevronDown } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { useSidebar } from '@/App';
 import { useLocalConversations } from '@/hooks/use-chat';
 import { getUser, signOut } from '@/lib/auth';
 
-/* ─────────────────────────────────────────────────────────────
-   OMEGA LOGO  — professional Ω mark in a teal square badge
-   ───────────────────────────────────────────────────────────── */
+/* ─── OMEGA LOGO — standalone amber Ω mark ─── */
 export function OmegaLogo({ size = 32 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="36" height="36" rx="9" fill="url(#logoGrad)" />
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none">
       <path
-        d="M10 22 C10 12 13.5 8 18 8 C22.5 8 26 12 26 22"
-        stroke="white" strokeWidth="2.6" strokeLinecap="round" fill="none"
+        d="M20 6C11.716 6 5 12.716 5 21c0 4.356 1.788 8.288 4.672 11.116L5 36h9.6c1.716.6 3.548.928 5.46.928 1.9 0 3.724-.324 5.43-.916L34.944 36l-4.672-3.884A14.938 14.938 0 0 0 34.944 21C34.944 12.716 28.284 6 20 6z"
+        fill="url(#omegaGold)"
       />
-      <path d="M7 26 L10 26 L10 22" stroke="white" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-      <path d="M29 26 L26 26 L26 22" stroke="white" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+      <path
+        d="M20 9C13.373 9 8 14.373 8 21c0 3.627 1.55 6.9 4.022 9.196L8.5 33.5h5.3A12.9 12.9 0 0 0 20 34.944c2.278 0 4.42-.587 6.282-1.62l5.218.176-3.522-3.3A11.943 11.943 0 0 0 32 21c0-6.627-5.373-12-12-12z"
+        fill="#0A0A0A"
+      />
       <defs>
-        <linearGradient id="logoGrad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
-          <stop offset="0%"   stopColor="#00B8D9" />
-          <stop offset="100%" stopColor="#0077A8" />
+        <linearGradient id="omegaGold" x1="5" y1="6" x2="35" y2="36" gradientUnits="userSpaceOnUse">
+          <stop offset="0%"   stopColor="#E8A84A" />
+          <stop offset="50%"  stopColor="#D4893A" />
+          <stop offset="100%" stopColor="#B86E22" />
         </linearGradient>
       </defs>
     </svg>
   );
 }
 
+/* ─── Small mark used in message bubbles ─── */
+export function OmegaMark({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none">
+      <path
+        d="M20 6C11.716 6 5 12.716 5 21c0 4.356 1.788 8.288 4.672 11.116L5 36h9.6c1.716.6 3.548.928 5.46.928 1.9 0 3.724-.324 5.43-.916L34.944 36l-4.672-3.884A14.938 14.938 0 0 0 34.944 21C34.944 12.716 28.284 6 20 6z"
+        fill="url(#omegaGoldMini)"
+      />
+      <path
+        d="M20 9C13.373 9 8 14.373 8 21c0 3.627 1.55 6.9 4.022 9.196L8.5 33.5h5.3A12.9 12.9 0 0 0 20 34.944c2.278 0 4.42-.587 6.282-1.62l5.218.176-3.522-3.3A11.943 11.943 0 0 0 32 21c0-6.627-5.373-12-12-12z"
+        fill="#0A0A0A"
+      />
+      <defs>
+        <linearGradient id="omegaGoldMini" x1="5" y1="6" x2="35" y2="36" gradientUnits="userSpaceOnUse">
+          <stop offset="0%"   stopColor="#E8A84A" />
+          <stop offset="50%"  stopColor="#D4893A" />
+          <stop offset="100%" stopColor="#B86E22" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
+const NAV_ITEMS = [
+  { href: '/',          label: 'Home',      Icon: Home },
+  { href: '/agents',    label: 'Agents',    Icon: Users },
+  { href: '/models',    label: 'Models',    Icon: Cpu },
+  { href: '/knowledge', label: 'Knowledge', Icon: BookOpen },
+  { href: '/tools',     label: 'Tools',     Icon: Wrench },
+];
+
 export function Sidebar() {
   const [location, setLocation] = useLocation();
   const { close } = useSidebar();
   const { conversations, create, remove } = useLocalConversations();
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [hoverNew, setHoverNew] = useState(false);
   const user = getUser();
 
   const currentId = location.match(/\/chat\/([^/]+)/)?.[1];
@@ -47,146 +76,124 @@ export function Sidebar() {
   };
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault(); e.stopPropagation();
     setDeletingId(id);
     remove(id);
     if (currentId === id) setLocation('/');
-    toast.success('Sohbet silindi');
+    toast.success('Silindi');
     setDeletingId(null);
-  };
-
-  const handleSignOut = () => {
-    signOut();
-    window.location.reload();
   };
 
   /* Group conversations by date */
   const groups: { label: string; items: typeof conversations }[] = [];
   if (conversations?.length) {
-    const now    = new Date();
-    const today  = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yest   = new Date(today); yest.setDate(today.getDate() - 1);
-    const week   = new Date(today); week.setDate(today.getDate() - 7);
+    const now   = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yest  = new Date(today); yest.setDate(today.getDate() - 1);
+    const week  = new Date(today); week.setDate(today.getDate() - 7);
 
-    const todayList     = conversations.filter(c => new Date(c.updatedAt) >= today);
-    const yesterdayList = conversations.filter(c => { const d = new Date(c.updatedAt); return d >= yest && d < today; });
-    const weekList      = conversations.filter(c => { const d = new Date(c.updatedAt); return d >= week && d < yest; });
-    const olderList     = conversations.filter(c => new Date(c.updatedAt) < week);
+    const todayList = conversations.filter(c => new Date(c.updatedAt) >= today);
+    const yestList  = conversations.filter(c => { const d = new Date(c.updatedAt); return d >= yest && d < today; });
+    const weekList  = conversations.filter(c => { const d = new Date(c.updatedAt); return d >= week && d < yest; });
+    const older     = conversations.filter(c => new Date(c.updatedAt) < week);
 
-    if (todayList.length)     groups.push({ label: 'Bugün',     items: todayList });
-    if (yesterdayList.length) groups.push({ label: 'Dün',       items: yesterdayList });
-    if (weekList.length)      groups.push({ label: 'Bu Hafta',  items: weekList });
-    if (olderList.length)     groups.push({ label: 'Daha Önce', items: olderList });
+    if (todayList.length) groups.push({ label: 'Today',     items: todayList });
+    if (yestList.length)  groups.push({ label: 'Yesterday', items: yestList });
+    if (weekList.length)  groups.push({ label: 'This Week', items: weekList });
+    if (older.length)     groups.push({ label: 'Earlier',   items: older });
   }
 
   return (
     <div
-      className="w-64 h-full flex flex-col select-none"
-      style={{ background: '#0A0A0A', borderRight: '1px solid #1E1E1E' }}
+      className="w-[165px] h-full flex flex-col select-none"
+      style={{ background: '#0C0C0C', borderRight: '1px solid #1A1A1A' }}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-3">
-        <Link href="/">
-          <div className="flex items-center gap-2.5 cursor-pointer group">
-            <OmegaLogo size={32} />
-            <div>
-              <div className="font-display font-semibold text-[14px] tracking-tight leading-none" style={{ color: '#E8E8E8' }}>
-                Omega AI
-              </div>
-              <div className="text-[10px] mt-0.5" style={{ color: '#444' }}>
-                Yapay Zeka Asistanı
-              </div>
-            </div>
+      {/* ── Logo ── */}
+      <Link href="/" onClick={close}>
+        <div className="flex items-center gap-2.5 px-4 pt-5 pb-4 cursor-pointer">
+          <OmegaLogo size={36} />
+          <div>
+            <div className="font-display font-bold text-[13px] leading-none tracking-wide" style={{ color: '#E8E8E8', letterSpacing: '0.04em' }}>OMEGA</div>
+            <div className="text-[9px] mt-0.5 tracking-widest font-semibold" style={{ color: '#555', letterSpacing: '0.12em' }}>AI AGENT</div>
           </div>
-        </Link>
-        <button
-          onClick={close}
-          className="md:hidden p-1.5 rounded-lg transition-colors"
-          style={{ color: '#555' }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#999')}
-          onMouseLeave={e => (e.currentTarget.style.color = '#555')}
-        >
-          <X className="w-4 h-4" />
-        </button>
-      </div>
+        </div>
+      </Link>
 
-      {/* New Chat */}
+      {/* ── New Chat ── */}
       <div className="px-3 pb-3">
         <button
           onClick={handleNewChat}
-          onMouseEnter={() => setHoverNew(true)}
-          onMouseLeave={() => setHoverNew(false)}
-          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-150"
-          style={{
-            background: hoverNew ? '#1A1A1A' : 'transparent',
-            border: `1px solid ${hoverNew ? '#2A2A2A' : '#1E1E1E'}`,
-            color: hoverNew ? '#CECECE' : '#888',
-          }}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] font-medium transition-all"
+          style={{ background: 'transparent', border: '1px solid #222', color: '#888' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#181818'; (e.currentTarget as HTMLElement).style.color = '#CCC'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#888'; }}
         >
-          <SquarePen className="w-4 h-4" style={{ color: hoverNew ? '#00A3CC' : '#555' }} />
-          Yeni sohbet
+          <Plus className="w-3.5 h-3.5" />
+          New Chat
         </button>
       </div>
 
-      {/* Divider */}
-      <div style={{ height: '1px', background: '#181818', margin: '0 12px' }} />
+      {/* ── Nav ── */}
+      <nav className="px-2 pb-2">
+        {NAV_ITEMS.map(({ href, label, Icon }) => {
+          const isActive = href === '/' ? location === '/' : location.startsWith(href);
+          return (
+            <Link key={href} href={href} onClick={close}>
+              <div
+                className="flex items-center gap-2.5 px-3 py-2 rounded-lg mb-0.5 cursor-pointer transition-all text-[13px]"
+                style={{
+                  background: isActive ? '#1C1C1C' : 'transparent',
+                  color: isActive ? '#E0E0E0' : '#666',
+                  fontWeight: isActive ? '500' : '400',
+                }}
+                onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = '#161616'; (e.currentTarget as HTMLElement).style.color = '#AAA'; }}
+                onMouseLeave={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#666'; } }}
+              >
+                <Icon className="w-4 h-4 flex-shrink-0" style={{ color: isActive ? '#D4893A' : '#555' }} />
+                {label}
+              </div>
+            </Link>
+          );
+        })}
+      </nav>
 
-      {/* Conversation List */}
-      <div className="flex-1 overflow-y-auto px-2 py-3">
+      {/* ── Divider ── */}
+      <div style={{ height: '1px', background: '#181818', margin: '4px 12px' }} />
+
+      {/* ── Conversations ── */}
+      <div className="flex-1 overflow-y-auto px-2 py-2">
         {groups.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
-              style={{ background: '#141414', border: '1px solid #222' }}
-            >
-              <MessageSquare className="w-5 h-5" style={{ color: '#333' }} />
-            </div>
-            <p className="text-[12px]" style={{ color: '#444' }}>Henüz sohbet yok</p>
-            <p className="text-[11px] mt-0.5" style={{ color: '#333' }}>Yukarıdan başlayın</p>
-          </div>
+          <p className="text-[11px] text-center pt-6" style={{ color: '#333' }}>No conversations yet</p>
         ) : (
-          <div className="space-y-5">
+          <div className="space-y-4">
             {groups.map(group => (
               <div key={group.label}>
-                <p
-                  className="text-[10px] font-semibold uppercase tracking-widest px-2 mb-1.5"
-                  style={{ color: '#383838', letterSpacing: '0.1em' }}
-                >
+                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] px-2 mb-1.5" style={{ color: '#333' }}>
                   {group.label}
                 </p>
                 <div className="space-y-px">
-                  {group.items?.map(conv => {
-                    const isActive = currentId === conv.id;
+                  {group.items.map(conv => {
+                    const isAct = currentId === conv.id;
                     return (
                       <Link key={conv.id} href={`/chat/${conv.id}`} onClick={close}>
                         <div
-                          className="group flex items-center justify-between px-2.5 py-2 rounded-lg cursor-pointer transition-all duration-100"
-                          style={{
-                            background: isActive ? '#1C1C1C' : 'transparent',
-                            borderLeft: isActive ? '2px solid #00A3CC' : '2px solid transparent',
-                          }}
-                          onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = '#141414'; }}
-                          onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                          className="group flex items-center justify-between px-2 py-1.5 rounded-md cursor-pointer transition-all"
+                          style={{ background: isAct ? '#1C1C1C' : 'transparent', borderLeft: isAct ? '2px solid #D4893A' : '2px solid transparent' }}
+                          onMouseEnter={e => { if (!isAct) (e.currentTarget as HTMLElement).style.background = '#151515'; }}
+                          onMouseLeave={e => { if (!isAct) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                         >
-                          <span
-                            className="text-[13px] truncate flex-1 leading-snug"
-                            style={{ color: isActive ? '#E0E0E0' : '#676767' }}
-                          >
-                            {conv.title || 'Yeni Sohbet'}
+                          <span className="text-[11.5px] truncate flex-1 leading-snug" style={{ color: isAct ? '#DDD' : '#5A5A5A' }}>
+                            {conv.title || 'New Chat'}
                           </span>
                           <button
                             onClick={e => handleDelete(e, conv.id)}
                             disabled={deletingId === conv.id}
-                            className="opacity-0 group-hover:opacity-100 flex-shrink-0 ml-1 p-1 rounded transition-all"
-                            style={{ color: '#555' }}
+                            className="opacity-0 group-hover:opacity-100 flex-shrink-0 ml-1 p-0.5 rounded"
+                            style={{ color: '#444' }}
                             onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-                            onMouseLeave={e => (e.currentTarget.style.color = '#555')}
+                            onMouseLeave={e => (e.currentTarget.style.color = '#444')}
                           >
-                            {deletingId === conv.id
-                              ? <Loader2 className="w-3 h-3 animate-spin" />
-                              : <Trash2 className="w-3 h-3" />
-                            }
+                            {deletingId === conv.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
                           </button>
                         </div>
                       </Link>
@@ -199,46 +206,31 @@ export function Sidebar() {
         )}
       </div>
 
-      {/* Footer — user info + sign out */}
-      <div style={{ borderTop: '1px solid #181818', padding: '10px 12px 14px' }}>
-        {user && (
-          <div className="flex items-center gap-2 px-2 py-2 mb-1">
+      {/* ── User card ── */}
+      {user && (
+        <div
+          className="px-3 py-3 mx-2 mb-3 rounded-xl cursor-pointer transition-all"
+          style={{ background: '#141414', border: '1px solid #1E1E1E' }}
+          onClick={() => { signOut(); window.location.reload(); }}
+          onMouseEnter={e => (e.currentTarget.style.background = '#1A1A1A')}
+          onMouseLeave={e => (e.currentTarget.style.background = '#141414')}
+          title="Çıkış yap"
+        >
+          <div className="flex items-center gap-2">
             <div
-              className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold"
-              style={{ background: 'rgba(0,163,204,0.12)', color: '#00A3CC', border: '1px solid rgba(0,163,204,0.2)' }}
+              className="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold flex-shrink-0"
+              style={{ background: 'rgba(212,137,58,0.2)', color: '#D4893A', border: '1px solid rgba(212,137,58,0.3)' }}
             >
               {(user.name || user.email).charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[11px] font-medium truncate" style={{ color: '#888' }}>
-                {user.name || user.email}
-              </div>
-              <div className="text-[10px] truncate" style={{ color: '#3A3A3A' }}>
-                {user.email}
-              </div>
+              <div className="text-[11px] font-semibold truncate" style={{ color: '#CCC' }}>{user.name || 'User'}</div>
+              <div className="text-[9px] truncate" style={{ color: '#D4893A' }}>Pro Plan</div>
             </div>
+            <ChevronDown className="w-3 h-3 flex-shrink-0" style={{ color: '#444' }} />
           </div>
-        )}
-        <button
-          onClick={handleSignOut}
-          className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-[11px] transition-colors"
-          style={{ color: '#383838' }}
-          onMouseEnter={e => {
-            (e.currentTarget as HTMLElement).style.color = '#666';
-            (e.currentTarget as HTMLElement).style.background = '#141414';
-          }}
-          onMouseLeave={e => {
-            (e.currentTarget as HTMLElement).style.color = '#383838';
-            (e.currentTarget as HTMLElement).style.background = 'transparent';
-          }}
-        >
-          <LogOut className="w-3 h-3" />
-          Çıkış yap
-        </button>
-        <p className="text-[10px] text-center mt-2" style={{ color: '#2E2E2E' }}>
-          Hermes · Qwen · Llama · Quantum
-        </p>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

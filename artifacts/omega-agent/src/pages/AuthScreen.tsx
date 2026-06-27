@@ -37,14 +37,17 @@ export function AuthScreen({ onAuth }: AuthScreenProps) {
       <div className="w-full max-w-sm animate-fade-up">
         {/* Logo */}
         <div className="flex flex-col items-center mb-10">
-          <OmegaLogo size={52} />
+          <OmegaLogo size={56} />
           <h1
-            className="mt-4 text-2xl font-display font-bold tracking-tight"
-            style={{ color: '#E8E8E8', letterSpacing: '-0.03em' }}
+            className="mt-4 text-[22px] font-display font-bold tracking-widest"
+            style={{ color: '#E8E8E8', letterSpacing: '0.14em' }}
           >
-            Omega AI
+            OMEGA
           </h1>
-          <p className="mt-1.5 text-[13px]" style={{ color: '#444' }}>
+          <p className="mt-1 text-[10px] font-semibold tracking-[0.28em]" style={{ color: '#555' }}>
+            AI AGENT
+          </p>
+          <p className="mt-4 text-[13px]" style={{ color: '#444' }}>
             Devam etmek için oturum açın
           </p>
         </div>
@@ -61,10 +64,7 @@ export function AuthScreen({ onAuth }: AuthScreenProps) {
                   E-posta adresi
                 </label>
                 <div className="relative">
-                  <Mail
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4"
-                    style={{ color: '#444' }}
-                  />
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#444' }} />
                   <input
                     type="email"
                     value={email}
@@ -76,9 +76,9 @@ export function AuthScreen({ onAuth }: AuthScreenProps) {
                       background: '#141414',
                       border: error ? '1px solid rgba(239,68,68,0.5)' : '1px solid #242424',
                       color: '#E0E0E0',
-                      caretColor: '#00A3CC',
+                      caretColor: '#D4893A',
                     }}
-                    onFocus={e => { e.currentTarget.style.borderColor = 'rgba(0,163,204,0.4)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0,163,204,0.08)'; }}
+                    onFocus={e => { e.currentTarget.style.borderColor = 'rgba(212,137,58,0.4)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(212,137,58,0.08)'; }}
                     onBlur={e  => { e.currentTarget.style.borderColor = error ? 'rgba(239,68,68,0.5)' : '#242424'; e.currentTarget.style.boxShadow = 'none'; }}
                   />
                 </div>
@@ -90,9 +90,9 @@ export function AuthScreen({ onAuth }: AuthScreenProps) {
               <button
                 type="submit"
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[14px] font-semibold transition-all"
-                style={{ background: '#00A3CC', color: '#fff' }}
-                onMouseEnter={e => (e.currentTarget.style.background = '#0090B5')}
-                onMouseLeave={e => (e.currentTarget.style.background = '#00A3CC')}
+                style={{ background: '#D4893A', color: '#0A0A0A' }}
+                onMouseEnter={e => (e.currentTarget.style.background = '#C07A2E')}
+                onMouseLeave={e => (e.currentTarget.style.background = '#D4893A')}
               >
                 Devam et
                 <ArrowRight className="w-4 h-4" />
@@ -115,10 +115,7 @@ export function AuthScreen({ onAuth }: AuthScreenProps) {
                   Adınız (isteğe bağlı)
                 </label>
                 <div className="relative">
-                  <User
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4"
-                    style={{ color: '#444' }}
-                  />
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#444' }} />
                   <input
                     type="text"
                     value={name}
@@ -130,9 +127,9 @@ export function AuthScreen({ onAuth }: AuthScreenProps) {
                       background: '#141414',
                       border: '1px solid #242424',
                       color: '#E0E0E0',
-                      caretColor: '#00A3CC',
+                      caretColor: '#D4893A',
                     }}
-                    onFocus={e => { e.currentTarget.style.borderColor = 'rgba(0,163,204,0.4)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0,163,204,0.08)'; }}
+                    onFocus={e => { e.currentTarget.style.borderColor = 'rgba(212,137,58,0.4)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(212,137,58,0.08)'; }}
                     onBlur={e  => { e.currentTarget.style.borderColor = '#242424'; e.currentTarget.style.boxShadow = 'none'; }}
                   />
                 </div>
@@ -142,9 +139,9 @@ export function AuthScreen({ onAuth }: AuthScreenProps) {
                 type="submit"
                 disabled={loading}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[14px] font-semibold transition-all"
-                style={{ background: loading ? '#005F77' : '#00A3CC', color: '#fff' }}
-                onMouseEnter={e => { if (!loading) e.currentTarget.style.background = '#0090B5'; }}
-                onMouseLeave={e => { if (!loading) e.currentTarget.style.background = '#00A3CC'; }}
+                style={{ background: loading ? '#8B5E28' : '#D4893A', color: '#0A0A0A', opacity: loading ? 0.7 : 1 }}
+                onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLElement).style.background = '#C07A2E'; }}
+                onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLElement).style.background = '#D4893A'; }}
               >
                 {loading ? 'Giriş yapılıyor…' : 'Başla'}
                 {!loading && <ArrowRight className="w-4 h-4" />}

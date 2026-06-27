@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Send, Image as ImageIcon, Square, Mic, MicOff,
-  Bot, Search, Code2, Paintbrush, Layers, ChevronDown, Film, Paperclip, Sparkles,
+  Code2, Layers, ChevronDown, Film, Paperclip, Globe,
+  Hash, Zap, Bot,
 } from 'lucide-react';
 import { AgentMode } from '@/hooks/use-chat';
 import { cn } from '@/lib/utils';
@@ -18,33 +19,32 @@ interface ChatInputProps {
   isGeneratingImage?: boolean;
 }
 
-const MODES: { id: AgentMode; label: string; icon: React.ReactNode; desc: string }[] = [
-  { id: 'auto',       label: 'Otomatik',   icon: <Bot className="w-4 h-4" />,       desc: 'Genel asistan' },
-  { id: 'researcher', label: 'Araştırmacı', icon: <Search className="w-4 h-4" />,    desc: 'Derin araştırma' },
-  { id: 'coder',      label: 'Mühendis',   icon: <Code2 className="w-4 h-4" />,      desc: 'Kod & teknik' },
-  { id: 'designer',   label: 'Tasarımcı',  icon: <Paintbrush className="w-4 h-4" />, desc: 'UI/UX tasarım' },
-  { id: 'multi',      label: 'Çok-Ajan',   icon: <Layers className="w-4 h-4" />,     desc: '3 ajan → 1 cevap' },
+/* ─── Model options (shown in bar) ─── */
+interface OmegaModel { id: AgentMode; label: string; icon: React.ReactNode; badge?: string }
+const OMEGA_MODELS: OmegaModel[] = [
+  { id: 'multi',    label: 'OMEGA AGENT',   icon: <Layers className="w-3.5 h-3.5" />, badge: 'Recommended' },
+  { id: 'quantum',  label: 'OMEGA QUANTUM', icon: <Zap    className="w-3.5 h-3.5" /> },
+  { id: 'auto',     label: 'OMEGA ORIGIN',  icon: <Bot    className="w-3.5 h-3.5" /> },
 ];
 
 const IMAGE_STYLES = [
-  { id: 'default',   label: 'Otomatik' },
-  { id: 'realistic', label: 'Gerçekçi' },
-  { id: 'anime',     label: 'Anime' },
-  { id: 'pony',      label: 'Pony' },
-  { id: '3d',        label: '3D' },
-  { id: 'art',       label: 'Sanatsal' },
+  { id: 'default',   label: 'Auto'      },
+  { id: 'realistic', label: 'Realistic' },
+  { id: 'anime',     label: 'Anime'     },
+  { id: 'pony',      label: 'Pony'      },
+  { id: '3d',        label: '3D'        },
+  { id: 'art',       label: 'Artistic'  },
   { id: 'cyberpunk', label: 'Cyberpunk' },
-  { id: 'fantasy',   label: 'Fantastik' },
+  { id: 'fantasy',   label: 'Fantasy'   },
 ];
 
 const IMAGE_KEYWORDS = ['resim', 'görsel', 'çiz', 'üret', 'fotoğraf', 'anime', 'pony', 'image', 'draw', 'generate', 'picture', 'photo'];
 
-/* ─── small helper: popup wrapper ─── */
-function Popup({ children }: { children: React.ReactNode }) {
+function Popup({ children, right }: { children: React.ReactNode; right?: boolean }) {
   return (
     <div
-      className="absolute bottom-full mb-2 left-0 right-0 rounded-xl shadow-2xl z-50 animate-fade-up overflow-hidden"
-      style={{ background: 'hsl(0 0% 9%)', border: '1px solid hsl(0 0% 16%)' }}
+      className={`absolute bottom-full mb-2 rounded-xl shadow-2xl z-50 animate-fade-up overflow-hidden ${right ? 'right-0' : 'left-0'}`}
+      style={{ background: '#111', border: '1px solid #222', minWidth: 220 }}
     >
       {children}
     </div>
@@ -55,8 +55,8 @@ export function ChatInput({
   onSend, isStreaming, onStop, onVideoGenerate, onImageGenerate, isGeneratingImage: extGen,
 }: ChatInputProps) {
   const [input,           setInput]           = useState('');
-  const [mode,            setMode]            = useState<AgentMode>('auto');
-  const [showModes,       setShowModes]       = useState(false);
+  const [selectedModel,   setSelectedModel]   = useState<AgentMode>('multi');
+  const [showModels,      setShowModels]      = useState(false);
   const [showImgStyles,   setShowImgStyles]   = useState(false);
   const [showFilePanel,   setShowFilePanel]   = useState(false);
   const [attachedFile,    setAttachedFile]    = useState<ParsedFile | null>(null);
@@ -68,7 +68,6 @@ export function ChatInput({
   const textareaRef    = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  /* auto-resize textarea */
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -76,11 +75,13 @@ export function ChatInput({
     }
   }, [input]);
 
-  const hasImageKw    = IMAGE_KEYWORDS.some(k => input.toLowerCase().includes(k));
-  const hasStyleSel   = imageStyle !== 'default';
+  const hasImageKw     = IMAGE_KEYWORDS.some(k => input.toLowerCase().includes(k));
+  const hasStyleSel    = imageStyle !== 'default';
   const isImageRequest = hasImageKw || hasStyleSel;
 
-  /* voice */
+  const activeModel = OMEGA_MODELS.find(m => m.id === selectedModel) || OMEGA_MODELS[0];
+
+  /* ── Voice ── */
   const toggleVoice = () => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
       toast.error('Tarayıcınız ses tanımayı desteklemiyor');
@@ -97,7 +98,7 @@ export function ChatInput({
     rec.start(); setIsListening(true);
   };
 
-  /* image generation */
+  /* ── Image generation ── */
   const generateImage = async () => {
     if (!input.trim()) return;
     const text = input.trim(); setInput('');
@@ -109,12 +110,12 @@ export function ChatInput({
         body: JSON.stringify({ prompt: text, style: imageStyle }),
       });
       const d = await r.json();
-      if (d.url) onSend(text, mode, d.url); else throw new Error();
-    } catch { toast.error('Görsel üretilemedi'); onSend(text, mode); }
+      if (d.url) onSend(text, selectedModel, d.url); else throw new Error();
+    } catch { toast.error('Görsel üretilemedi'); onSend(text, selectedModel); }
     finally  { setInternalGen(false); }
   };
 
-  /* build message with file context */
+  /* ── Build message with file context ── */
   const buildMsg = (text: string) => {
     if (!attachedFile) return text;
     const meta = [
@@ -140,20 +141,28 @@ Kullanıcı sorusu: ${text}`;
     recordRequest();
 
     if (isImageRequest && !attachedFile) { generateImage(); return; }
-    onSend(buildMsg(input.trim()), mode);
-    setInput(''); setShowModes(false); setAttachedFile(null);
+    onSend(buildMsg(input.trim()), selectedModel);
+    setInput(''); setShowModels(false); setAttachedFile(null);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); }
   };
 
-  const activeMode = MODES.find(m => m.id === mode) || MODES[0];
-  const closeAll = () => { setShowModes(false); setShowImgStyles(false); };
+  /* ── Globe = researcher one-shot ── */
+  const handleGlobe = () => {
+    if (!input.trim()) return;
+    const { ok } = checkSuspicious(input.trim());
+    if (!ok) return;
+    recordRequest();
+    onSend(buildMsg(input.trim()), 'researcher');
+    setInput(''); setAttachedFile(null);
+  };
+
+  const closeAll = () => { setShowModels(false); setShowImgStyles(false); };
 
   return (
-    <div className="w-full max-w-[720px] mx-auto px-4 pb-5 pt-2 relative">
-      {/* File Upload Panel */}
+    <div className="w-full max-w-[780px] mx-auto px-4 pb-5 pt-2 relative">
       {showFilePanel && (
         <FileUploadPanel
           onClose={() => setShowFilePanel(false)}
@@ -174,58 +183,19 @@ Kullanıcı sorusu: ${text}`;
         />
       )}
 
-      {/* Mode picker popup */}
-      {showModes && (
-        <Popup>
-          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest px-3.5 pt-3 pb-2">
-            Ajan modu
-          </p>
-          <div className="pb-1.5">
-            {MODES.map(m => (
-              <button
-                key={m.id}
-                onClick={() => { setMode(m.id); setShowModes(false); }}
-                className={cn(
-                  'w-full flex items-center gap-3 px-3.5 py-2.5 text-sm text-left transition-colors',
-                  mode === m.id
-                    ? 'text-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
-                )}
-              >
-                <span className={mode === m.id ? 'text-primary' : 'text-muted-foreground/60'}>{m.icon}</span>
-                <div className="flex-1">
-                  <div className="font-medium text-[13px]">{m.label}</div>
-                  <div className="text-[11px] text-muted-foreground/60">{m.desc}</div>
-                </div>
-                {mode === m.id && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
-                )}
-              </button>
-            ))}
-          </div>
-        </Popup>
-      )}
-
       {/* Image style popup */}
       {showImgStyles && (
         <Popup>
-          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest px-3.5 pt-3 pb-2.5">
-            Görsel stili
-          </p>
-          <div className="flex flex-wrap gap-1.5 px-3.5 pb-3">
+          <p className="text-[10px] font-semibold uppercase tracking-widest px-4 pt-3 pb-2" style={{ color: '#555' }}>Görsel Stili</p>
+          <div className="flex flex-wrap gap-1.5 px-4 pb-3">
             {IMAGE_STYLES.map(s => (
               <button
                 key={s.id}
                 onClick={() => { setImageStyle(s.id); setShowImgStyles(false); }}
-                className={cn(
-                  'px-3 py-1.5 rounded-full text-xs font-medium transition-colors',
-                  imageStyle === s.id
-                    ? 'text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
+                className="px-2.5 py-1 rounded-full text-[11px] font-medium transition-all"
                 style={imageStyle === s.id
-                  ? { background: 'hsl(195 100% 45%)', border: '1px solid transparent' }
-                  : { background: 'transparent', border: '1px solid hsl(0 0% 20%)' }
+                  ? { background: '#D4893A', color: '#0A0A0A', border: '1px solid transparent' }
+                  : { background: 'transparent', border: '1px solid #282828', color: '#666' }
                 }
               >
                 {s.label}
@@ -235,12 +205,49 @@ Kullanıcı sorusu: ${text}`;
         </Popup>
       )}
 
-      {/* ── Main input box ── */}
+      {/* Model picker popup */}
+      {showModels && (
+        <Popup>
+          <p className="text-[10px] font-semibold uppercase tracking-widest px-4 pt-3 pb-2" style={{ color: '#555' }}>AI Model</p>
+          <div className="pb-2">
+            {OMEGA_MODELS.map(m => (
+              <button
+                key={m.id}
+                onClick={() => { setSelectedModel(m.id); setShowModels(false); }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all"
+                style={{
+                  background: selectedModel === m.id ? '#1C1C1C' : 'transparent',
+                  borderLeft: selectedModel === m.id ? '2px solid #D4893A' : '2px solid transparent',
+                  color: selectedModel === m.id ? '#E0E0E0' : '#777',
+                }}
+                onMouseEnter={e => { if (selectedModel !== m.id) (e.currentTarget as HTMLElement).style.background = '#161616'; }}
+                onMouseLeave={e => { if (selectedModel !== m.id) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+              >
+                <span style={{ color: selectedModel === m.id ? '#D4893A' : '#555' }}>{m.icon}</span>
+                <div className="flex-1">
+                  <div className="text-[12px] font-semibold tracking-wide" style={{ letterSpacing: '0.05em' }}>{m.label}</div>
+                </div>
+                {m.badge && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded font-bold tracking-wide"
+                    style={{ background: 'rgba(212,137,58,0.15)', color: '#D4893A', border: '1px solid rgba(212,137,58,0.25)', letterSpacing: '0.06em' }}>
+                    {m.badge}
+                  </span>
+                )}
+                {selectedModel === m.id && (
+                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#D4893A' }} />
+                )}
+              </button>
+            ))}
+          </div>
+        </Popup>
+      )}
+
+      {/* Main input box */}
       <div
         className="relative rounded-2xl transition-all duration-150 input-glow"
         style={{
-          background: 'hsl(0 0% 9%)',
-          border: `1px solid ${isListening ? 'hsl(0 72% 55% / 0.5)' : 'hsl(0 0% 16%)'}`,
+          background: '#111',
+          border: `1px solid ${isListening ? 'rgba(239,68,68,0.4)' : '#222'}`,
         }}
       >
         <textarea
@@ -249,131 +256,149 @@ Kullanıcı sorusu: ${text}`;
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={
-            isListening       ? '🎤 Dinleniyor…' :
-            mode === 'researcher' ? 'Araştırmak istediğin konuyu yaz…' :
-            mode === 'coder'      ? 'Yazmamı istediğin kodu anlat…' :
-            mode === 'designer'   ? 'Tasarım veya görsel isteğini yaz…' :
-            mode === 'multi'      ? 'Karmaşık görevini anlat — 3 ajan birlikte çalışır…' :
-            'Omega\'ya bir şey sor…'
+            isListening ? '🎤 Listening…' :
+            selectedModel === 'researcher' ? 'What would you like to research?' :
+            selectedModel === 'coder'      ? 'Describe the code you need…' :
+            selectedModel === 'quantum'    ? 'Ask anything — Omega Quantum will reason deeply…' :
+            selectedModel === 'multi'      ? 'Complex task? Omega Agent handles it with 3 specialists…' :
+            'Message Omega…'
           }
           disabled={isListening}
           rows={1}
-          className="w-full bg-transparent text-[14.5px] leading-relaxed resize-none outline-none px-4 pt-3.5 pb-2 max-h-[180px]"
-          style={{ color: 'hsl(0 0% 88%)', caretColor: 'hsl(195 100% 45%)' }}
+          className="w-full bg-transparent text-[14px] leading-relaxed resize-none outline-none px-4 pt-4 pb-2 max-h-[180px]"
+          style={{ color: '#D0D0D0', caretColor: '#D4893A' }}
         />
 
         {/* Toolbar */}
-        <div className="flex items-center justify-between px-2.5 pb-2.5 pt-1 gap-2">
-          <div className="flex items-center gap-1 flex-wrap">
-            {/* Mode selector */}
+        <div className="flex items-center justify-between px-3 pb-3 pt-1 gap-2">
+          <div className="flex items-center gap-1">
+
+            {/* Model selector */}
             <button
-              onClick={() => { setShowModes(!showModes); setShowImgStyles(false); }}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors"
+              onClick={() => { setShowModels(!showModels); setShowImgStyles(false); setShowFilePanel(false); }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold tracking-wide transition-all"
               style={{
-                background: showModes ? 'hsl(195 100% 45% / 0.12)' : 'transparent',
-                border: `1px solid ${showModes ? 'hsl(195 100% 45% / 0.3)' : 'hsl(0 0% 18%)'}`,
-                color: showModes ? 'hsl(195 100% 45%)' : 'hsl(0 0% 45%)',
+                background: showModels ? 'rgba(212,137,58,0.12)' : 'transparent',
+                border: `1px solid ${showModels ? 'rgba(212,137,58,0.3)' : '#282828'}`,
+                color: showModels ? '#D4893A' : '#666',
+                letterSpacing: '0.05em',
               }}
             >
-              <span>{activeMode.icon}</span>
-              <span>{activeMode.label}</span>
-              <ChevronDown className={cn('w-3 h-3 transition-transform', showModes && 'rotate-180')} />
+              <span style={{ color: showModels ? '#D4893A' : '#555' }}>{activeModel.icon}</span>
+              <span className="hidden sm:inline">{activeModel.label}</span>
+              <ChevronDown className={cn('w-3 h-3 transition-transform', showModels && 'rotate-180')} />
             </button>
 
-            {/* Image style */}
-            <button
-              onClick={() => { setShowImgStyles(!showImgStyles); setShowModes(false); }}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors"
-              style={{
-                background: isImageRequest ? 'hsl(35 95% 58% / 0.1)' : 'transparent',
-                border: `1px solid ${isImageRequest ? 'hsl(35 95% 58% / 0.3)' : 'hsl(0 0% 18%)'}`,
-                color: isImageRequest ? 'hsl(35 95% 58%)' : 'hsl(0 0% 45%)',
-              }}
-              title="Görsel stili"
-            >
-              <ImageIcon className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">
-                {imageStyle === 'default' ? 'Görsel' : IMAGE_STYLES.find(s => s.id === imageStyle)?.label}
-              </span>
-            </button>
-
-            {/* Voice */}
-            <button
-              onClick={toggleVoice}
-              className="p-1.5 rounded-lg transition-colors"
-              style={{
-                border: `1px solid ${isListening ? 'hsl(0 72% 55% / 0.4)' : 'hsl(0 0% 18%)'}`,
-                color: isListening ? 'hsl(0 72% 55%)' : 'hsl(0 0% 45%)',
-                background: isListening ? 'hsl(0 72% 55% / 0.08)' : 'transparent',
-              }}
-              title={isListening ? 'Durdur' : 'Sesle yaz'}
-            >
-              {isListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
-            </button>
-
-            {/* File */}
+            {/* Attach */}
             <button
               onClick={() => { setShowFilePanel(!showFilePanel); closeAll(); }}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors"
+              className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
               style={{
-                background: attachedFile ? 'hsl(145 60% 45% / 0.1)' : showFilePanel ? 'hsl(195 100% 45% / 0.1)' : 'transparent',
-                border: `1px solid ${attachedFile ? 'hsl(145 60% 45% / 0.3)' : showFilePanel ? 'hsl(195 100% 45% / 0.3)' : 'hsl(0 0% 18%)'}`,
-                color: attachedFile ? 'hsl(145 60% 55%)' : showFilePanel ? 'hsl(195 100% 45%)' : 'hsl(0 0% 45%)',
+                background: attachedFile ? 'rgba(34,197,94,0.1)' : showFilePanel ? 'rgba(212,137,58,0.1)' : 'transparent',
+                border: `1px solid ${attachedFile ? 'rgba(34,197,94,0.3)' : showFilePanel ? 'rgba(212,137,58,0.3)' : '#282828'}`,
+                color: attachedFile ? '#22c55e' : showFilePanel ? '#D4893A' : '#555',
               }}
               title="Dosya yükle"
             >
               <Paperclip className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{attachedFile ? 'Eklendi' : 'Dosya'}</span>
+            </button>
+
+            {/* Globe — researcher one-shot */}
+            <button
+              onClick={handleGlobe}
+              className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+              style={{ border: '1px solid #282828', color: '#555', background: 'transparent' }}
+              title="Web araştırması yap"
+              onMouseEnter={e => { (e.currentTarget.style.color = '#D4893A'); (e.currentTarget.style.borderColor = 'rgba(212,137,58,0.3)'); (e.currentTarget.style.background = 'rgba(212,137,58,0.08)'); }}
+              onMouseLeave={e => { (e.currentTarget.style.color = '#555'); (e.currentTarget.style.borderColor = '#282828'); (e.currentTarget.style.background = 'transparent'); }}
+            >
+              <Globe className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Image style */}
+            <button
+              onClick={() => { setShowImgStyles(!showImgStyles); setShowModels(false); setShowFilePanel(false); }}
+              className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+              style={{
+                background: isImageRequest ? 'rgba(212,137,58,0.1)' : showImgStyles ? 'rgba(212,137,58,0.1)' : 'transparent',
+                border: `1px solid ${isImageRequest || showImgStyles ? 'rgba(212,137,58,0.3)' : '#282828'}`,
+                color: isImageRequest || showImgStyles ? '#D4893A' : '#555',
+              }}
+              title="Görsel stili"
+            >
+              <ImageIcon className="w-3.5 h-3.5" />
+            </button>
+
+            {/* More / expand */}
+            <button
+              className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+              style={{ border: '1px solid #282828', color: '#555', background: 'transparent' }}
+              title="Daha fazla"
+              onMouseEnter={e => { (e.currentTarget.style.color = '#999'); (e.currentTarget.style.background = '#1A1A1A'); }}
+              onMouseLeave={e => { (e.currentTarget.style.color = '#555'); (e.currentTarget.style.background = 'transparent'); }}
+            >
+              <Hash className="w-3.5 h-3.5" />
             </button>
 
             {/* Video */}
             {onVideoGenerate && (
               <button
                 onClick={() => { onVideoGenerate(input.trim()); if (input.trim()) setInput(''); }}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                style={{ border: '1px solid hsl(0 0% 18%)', color: 'hsl(0 0% 45%)', background: 'transparent' }}
-                title="Video üret"
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'hsl(0 0% 70%)'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'hsl(0 0% 45%)'; }}
+                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+                style={{ border: '1px solid #282828', color: '#555', background: 'transparent' }}
+                title="Video üret (LTX)"
+                onMouseEnter={e => { (e.currentTarget.style.color = '#999'); (e.currentTarget.style.background = '#1A1A1A'); }}
+                onMouseLeave={e => { (e.currentTarget.style.color = '#555'); (e.currentTarget.style.background = 'transparent'); }}
               >
                 <Film className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Video</span>
               </button>
             )}
           </div>
 
-          {/* Send / Stop */}
-          {isStreaming || isGeneratingImage ? (
+          <div className="flex items-center gap-1.5">
+            {/* Mic */}
             <button
-              onClick={onStop}
-              className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors flex-shrink-0"
-              style={{ background: 'hsl(0 0% 14%)', border: '1px solid hsl(0 0% 20%)' }}
-              title="Durdur"
+              onClick={toggleVoice}
+              className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+              style={{
+                border: `1px solid ${isListening ? 'rgba(239,68,68,0.4)' : '#282828'}`,
+                color: isListening ? '#ef4444' : '#555',
+                background: isListening ? 'rgba(239,68,68,0.08)' : 'transparent',
+              }}
+              title={isListening ? 'Durdur' : 'Sesle yaz'}
             >
-              <Square className="w-3.5 h-3.5" style={{ color: 'hsl(0 0% 60%)', fill: 'hsl(0 0% 60%)' }} />
+              {isListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
             </button>
-          ) : (
-            <button
-              onClick={handleSubmit}
-              disabled={!input.trim() && !attachedFile}
-              className="w-8 h-8 rounded-lg flex items-center justify-center transition-all flex-shrink-0"
-              style={
-                input.trim()
-                  ? { background: 'hsl(195 100% 45%)', border: '1px solid transparent' }
-                  : { background: 'hsl(0 0% 13%)', border: '1px solid hsl(0 0% 18%)', cursor: 'not-allowed' }
-              }
-            >
-              {isImageRequest
-                ? <Sparkles className="w-3.5 h-3.5" style={{ color: input.trim() ? 'hsl(0 0% 5%)' : 'hsl(0 0% 30%)' }} />
-                : <Send    className="w-3.5 h-3.5 ml-0.5" style={{ color: input.trim() ? 'hsl(0 0% 5%)' : 'hsl(0 0% 30%)' }} />
-              }
-            </button>
-          )}
+
+            {/* Send / Stop */}
+            {isStreaming || isGeneratingImage ? (
+              <button
+                onClick={onStop}
+                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all flex-shrink-0"
+                style={{ background: '#1A1A1A', border: '1px solid #2A2A2A' }}
+                title="Durdur"
+              >
+                <Square className="w-3.5 h-3.5" style={{ color: '#888', fill: '#888' }} />
+              </button>
+            ) : (
+              <button
+                onClick={handleSubmit}
+                disabled={!input.trim() && !attachedFile}
+                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all flex-shrink-0"
+                style={input.trim()
+                  ? { background: '#D4893A', border: '1px solid transparent' }
+                  : { background: '#181818', border: '1px solid #282828', cursor: 'not-allowed' }
+                }
+              >
+                <Send className="w-3.5 h-3.5 ml-0.5" style={{ color: input.trim() ? '#0A0A0A' : '#3A3A3A' }} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      <p className="text-center text-[11px] mt-2" style={{ color: 'hsl(0 0% 28%)' }}>
-        Omega yanlış bilgi verebilir. Önemli konularda doğrulayın.
+      <p className="text-center text-[11px] mt-2" style={{ color: '#2E2E2E' }}>
+        Omega may be inaccurate. Verify important information.
       </p>
     </div>
   );

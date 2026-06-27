@@ -6,10 +6,8 @@ import { ChatInput } from '@/components/ChatInput';
 import { MultiTaskProgress } from '@/components/MultiTaskProgress';
 import { VideoGenerator } from '@/components/VideoGenerator';
 import { useSidebar } from '@/App';
-import { OmegaLogo } from '@/components/Sidebar';
+import { OmegaMark } from '@/components/Sidebar';
 import { Loader2, Menu } from 'lucide-react';
-
-function OmegaAvatar() { return <OmegaLogo size={28} />; }
 
 export default function ChatPage() {
   const { id } = useParams();
@@ -64,18 +62,20 @@ export default function ChatPage() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <Loader2 className="w-7 h-7 text-primary animate-spin" />
+      <div className="flex-1 flex items-center justify-center" style={{ background: '#0A0A0A' }}>
+        <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#D4893A' }} />
       </div>
     );
   }
 
   if (!conversation) {
     return (
-      <div className="flex-1 flex items-center justify-center px-4">
-        <div className="bg-card border border-border rounded-2xl p-8 flex flex-col items-center gap-3 text-center max-w-sm">
-          <h2 className="font-semibold text-lg">Sohbet Bulunamadı</h2>
-          <a href="/" className="px-4 py-2 rounded-full bg-primary hover:bg-primary/90 text-white text-sm font-medium">
+      <div className="flex-1 flex items-center justify-center px-4" style={{ background: '#0A0A0A' }}>
+        <div className="p-8 flex flex-col items-center gap-3 text-center max-w-sm rounded-2xl"
+          style={{ background: '#111', border: '1px solid #1E1E1E' }}>
+          <h2 className="font-semibold text-base" style={{ color: '#E0E0E0' }}>Sohbet Bulunamadı</h2>
+          <a href="/" className="px-4 py-2 rounded-full text-sm font-medium transition-all"
+            style={{ background: '#D4893A', color: '#0A0A0A' }}>
             Ana Sayfa
           </a>
         </div>
@@ -91,18 +91,25 @@ export default function ChatPage() {
   }));
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden">
-      {/* Mobile Header */}
+    <div className="flex-1 flex flex-col h-full overflow-hidden" style={{ background: '#0A0A0A' }}>
+
+      {/* Header */}
       <div
-        className="md:hidden flex items-center gap-3 px-4 py-3"
-        style={{ borderBottom: '1px solid #181818', background: '#0A0A0A' }}
+        className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
+        style={{ borderBottom: '1px solid #181818', background: '#0C0C0C' }}
       >
-        <button onClick={toggle} className="p-1.5 rounded-lg transition-colors" style={{ color: '#555' }}>
+        {/* Mobile menu */}
+        <button onClick={toggle} className="md:hidden p-1.5 rounded-lg" style={{ color: '#555' }}>
           <Menu className="w-5 h-5" />
         </button>
-        <OmegaAvatar />
-        <span className="font-display font-semibold text-[14px] truncate" style={{ color: '#E0E0E0' }}>
-          {conversation.title || 'Sohbet'}
+
+        <OmegaMark size={22} />
+
+        <span
+          className="flex-1 text-[13px] font-medium truncate"
+          style={{ color: '#888' }}
+        >
+          {conversation.title || 'New Chat'}
         </span>
       </div>
 
@@ -112,21 +119,12 @@ export default function ChatPage() {
 
           {allMessages.length === 0 && !isStreaming ? (
             <div className="flex flex-col items-center justify-center h-60 text-center px-4 animate-fade-up">
-              <div className="w-14 h-14 mb-5 opacity-40">
-                <svg viewBox="0 0 56 56" fill="none" className="w-full h-full">
-                  <circle cx="28" cy="24" r="16" stroke="url(#emptyGrad)" strokeWidth="3"/>
-                  <path d="M18 42c0-5.523 4.477-10 10-10s10 4.477 10 10" stroke="url(#emptyGrad)" strokeWidth="3" strokeLinecap="round"/>
-                  <path d="M12 42h32M20 42v4M36 42v4" stroke="url(#emptyGrad)" strokeWidth="2.5" strokeLinecap="round"/>
-                  <defs>
-                    <linearGradient id="emptyGrad" x1="12" y1="8" x2="44" y2="52" gradientUnits="userSpaceOnUse">
-                      <stop stopColor="#00D4FF"/><stop offset="1" stopColor="#F5A623"/>
-                    </linearGradient>
-                  </defs>
-                </svg>
+              <div className="mb-5 opacity-30">
+                <OmegaMark size={48} />
               </div>
-              <h2 className="text-xl font-display font-semibold mb-1.5">Sohbet Hazır</h2>
-              <p className="text-muted-foreground text-sm max-w-xs leading-relaxed">
-                Aşağıya bir şey yaz veya sesli komut ver. Her türlü soru ve görev için buradayım.
+              <h2 className="text-lg font-display font-semibold mb-1.5" style={{ color: '#888' }}>Ready</h2>
+              <p className="text-[13px] max-w-xs leading-relaxed" style={{ color: '#444' }}>
+                Type a message below or use the Globe button for web research.
               </p>
             </div>
           ) : (
@@ -143,18 +141,17 @@ export default function ChatPage() {
             <>
               <MessageBubble role="user" content={pendingImage.prompt} />
               <div className="flex gap-3 px-4 md:px-10 py-4 animate-fade-up">
-                <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5"
-                  style={{ background: 'hsl(195 100% 45% / 0.08)', border: '1px solid hsl(195 100% 45% / 0.18)' }}>
-                  <OmegaAvatar />
+                <div className="flex-shrink-0 mt-0.5">
+                  <OmegaMark size={28} />
                 </div>
                 <div className="flex-1 max-w-xs pt-0.5">
-                  <div className="text-[13px] font-semibold font-display mb-2.5" style={{ color: 'hsl(195 100% 45%)' }}>Omega</div>
+                  <div className="text-[13px] font-semibold font-display mb-2.5" style={{ color: '#D4893A' }}>Omega</div>
                   <div className="relative rounded-xl overflow-hidden shimmer"
-                    style={{ aspectRatio: '1/1', maxWidth: '280px', background: 'hsl(0 0% 9%)', border: '1px solid hsl(0 0% 16%)' }}>
+                    style={{ aspectRatio: '1/1', maxWidth: '280px', background: '#111', border: '1px solid #222' }}>
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                      <Loader2 className="w-7 h-7 animate-spin" style={{ color: 'hsl(195 100% 45% / 0.5)' }} />
-                      <p className="text-[12px] text-center px-4" style={{ color: 'hsl(0 0% 40%)' }}>
-                        Görsel üretiliyor…
+                      <Loader2 className="w-7 h-7 animate-spin" style={{ color: 'rgba(212,137,58,0.5)' }} />
+                      <p className="text-[12px] text-center px-4" style={{ color: '#555' }}>
+                        Generating image…
                       </p>
                     </div>
                   </div>
@@ -169,14 +166,13 @@ export default function ChatPage() {
 
           {isStreaming && !currentStreamedText && multiTaskEvents.length === 0 && (
             <div className="flex gap-3 px-4 md:px-10 py-4 animate-fade-up">
-              <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5"
-                style={{ background: 'hsl(195 100% 45% / 0.08)', border: '1px solid hsl(195 100% 45% / 0.18)' }}>
-                <OmegaAvatar />
+              <div className="flex-shrink-0 mt-0.5">
+                <OmegaMark size={28} />
               </div>
               <div className="flex items-center gap-1.5 pt-2">
-                <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'hsl(195 100% 45% / 0.6)' }} />
-                <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'hsl(195 100% 45% / 0.6)' }} />
-                <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'hsl(195 100% 45% / 0.6)' }} />
+                <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(212,137,58,0.6)' }} />
+                <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(212,137,58,0.6)' }} />
+                <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(212,137,58,0.6)' }} />
               </div>
             </div>
           )}
@@ -186,7 +182,7 @@ export default function ChatPage() {
       </div>
 
       {/* Input */}
-      <div className="bg-gradient-to-t from-background via-background/95 to-transparent pt-6">
+      <div style={{ background: 'linear-gradient(to top, #0A0A0A 80%, transparent)' }} className="pt-4">
         <ChatInput
           onSend={sendMessage}
           isStreaming={isStreaming}

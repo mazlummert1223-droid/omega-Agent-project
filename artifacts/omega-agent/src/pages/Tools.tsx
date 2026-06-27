@@ -29,8 +29,8 @@ export default function ToolsPage() {
                 onMouseLeave={e => (e.currentTarget.style.background = '#111')}
               >
                 <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ background: t.active ? 'rgba(212,137,58,0.1)' : '#1A1A1A', border: `1px solid ${t.active ? 'rgba(212,137,58,0.2)' : '#252525'}` }}>
-                  <Icon className="w-4 h-4" style={{ color: t.active ? '#D4893A' : '#444' }} />
+                  style={{ background: t.active ? 'rgba(240,151,46,0.1)' : '#1A1A1A', border: `1px solid ${t.active ? 'rgba(240,151,46,0.2)' : '#252525'}` }}>
+                  <Icon className="w-4 h-4" style={{ color: t.active ? '#F0972E' : '#444' }} />
                 </div>
                 <div className="flex-1">
                   <div className="text-[13px] font-medium" style={{ color: t.active ? '#D0D0D0' : '#555' }}>{t.name}</div>
@@ -39,7 +39,7 @@ export default function ToolsPage() {
                 {/* Toggle */}
                 <div
                   className="relative w-9 h-5 rounded-full transition-all flex-shrink-0 cursor-pointer"
-                  style={{ background: t.active ? '#D4893A' : '#222', border: `1px solid ${t.active ? '#D4893A' : '#2A2A2A'}` }}
+                  style={{ background: t.active ? '#F0972E' : '#222', border: `1px solid ${t.active ? '#F0972E' : '#2A2A2A'}` }}
                 >
                   <div
                     className="absolute top-0.5 w-4 h-4 rounded-full transition-all"

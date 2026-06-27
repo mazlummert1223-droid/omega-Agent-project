@@ -76,9 +76,9 @@ export function AuthScreen({ onAuth }: AuthScreenProps) {
                       background: '#141414',
                       border: error ? '1px solid rgba(239,68,68,0.5)' : '1px solid #242424',
                       color: '#E0E0E0',
-                      caretColor: '#D4893A',
+                      caretColor: '#F0972E',
                     }}
-                    onFocus={e => { e.currentTarget.style.borderColor = 'rgba(212,137,58,0.4)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(212,137,58,0.08)'; }}
+                    onFocus={e => { e.currentTarget.style.borderColor = 'rgba(240,151,46,0.4)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(240,151,46,0.08)'; }}
                     onBlur={e  => { e.currentTarget.style.borderColor = error ? 'rgba(239,68,68,0.5)' : '#242424'; e.currentTarget.style.boxShadow = 'none'; }}
                   />
                 </div>
@@ -90,9 +90,9 @@ export function AuthScreen({ onAuth }: AuthScreenProps) {
               <button
                 type="submit"
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[14px] font-semibold transition-all"
-                style={{ background: '#D4893A', color: '#0A0A0A' }}
+                style={{ background: '#F0972E', color: '#0A0A0A' }}
                 onMouseEnter={e => (e.currentTarget.style.background = '#C07A2E')}
-                onMouseLeave={e => (e.currentTarget.style.background = '#D4893A')}
+                onMouseLeave={e => (e.currentTarget.style.background = '#F0972E')}
               >
                 Devam et
                 <ArrowRight className="w-4 h-4" />
@@ -127,9 +127,9 @@ export function AuthScreen({ onAuth }: AuthScreenProps) {
                       background: '#141414',
                       border: '1px solid #242424',
                       color: '#E0E0E0',
-                      caretColor: '#D4893A',
+                      caretColor: '#F0972E',
                     }}
-                    onFocus={e => { e.currentTarget.style.borderColor = 'rgba(212,137,58,0.4)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(212,137,58,0.08)'; }}
+                    onFocus={e => { e.currentTarget.style.borderColor = 'rgba(240,151,46,0.4)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(240,151,46,0.08)'; }}
                     onBlur={e  => { e.currentTarget.style.borderColor = '#242424'; e.currentTarget.style.boxShadow = 'none'; }}
                   />
                 </div>
@@ -139,9 +139,9 @@ export function AuthScreen({ onAuth }: AuthScreenProps) {
                 type="submit"
                 disabled={loading}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[14px] font-semibold transition-all"
-                style={{ background: loading ? '#8B5E28' : '#D4893A', color: '#0A0A0A', opacity: loading ? 0.7 : 1 }}
+                style={{ background: loading ? '#8B5E28' : '#F0972E', color: '#0A0A0A', opacity: loading ? 0.7 : 1 }}
                 onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLElement).style.background = '#C07A2E'; }}
-                onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLElement).style.background = '#D4893A'; }}
+                onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLElement).style.background = '#F0972E'; }}
               >
                 {loading ? 'Giriş yapılıyor…' : 'Başla'}
                 {!loading && <ArrowRight className="w-4 h-4" />}

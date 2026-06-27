@@ -56,12 +56,12 @@ export function MessageBubble({ role, content, isStreaming }: MessageBubbleProps
                 color: 'hsl(0 0% 60%)',
               }}
             >
-              <FileText className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#D4893A' }} />
+              <FileText className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#F0972E' }} />
               <span className="truncate max-w-[180px] text-[13px]">{fileMsg.fileName}</span>
               {fileMsg.fileType && (
                 <span
                   className="text-[11px] px-1.5 py-0.5 rounded font-medium flex-shrink-0"
-                  style={{ background: 'rgba(212,137,58,0.1)', color: '#D4893A' }}
+                  style={{ background: 'rgba(240,151,46,0.1)', color: '#F0972E' }}
                 >
                   {fileMsg.fileType}
                 </span>
@@ -117,15 +117,15 @@ export function MessageBubble({ role, content, isStreaming }: MessageBubbleProps
         <div className="flex items-center gap-2.5 mb-2.5">
           <span
             className="text-[13px] font-semibold font-display"
-            style={{ color: '#D4893A' }}
+            style={{ color: '#F0972E' }}
           >
             Omega
           </span>
           {isStreaming && (
             <span className="flex gap-1 items-center">
-              <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(212,137,58,0.6)' }} />
-              <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(212,137,58,0.6)' }} />
-              <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(212,137,58,0.6)' }} />
+              <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(240,151,46,0.6)' }} />
+              <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(240,151,46,0.6)' }} />
+              <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(240,151,46,0.6)' }} />
             </span>
           )}
         </div>

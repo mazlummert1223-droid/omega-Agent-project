@@ -330,8 +330,9 @@ export function VideoGenerator({ prompt: initialPrompt, onClose }: VideoGenerato
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-500/30 flex items-center justify-center">
-              <Film className="w-5 h-5 text-pink-400" />
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
+              style={{ background: 'rgba(240,151,46,0.14)', border: '1px solid rgba(240,151,46,0.28)' }}>
+              <Film className="w-5 h-5" style={{ color: '#F0972E' }} />
             </div>
             <div>
               <h2 className="font-semibold text-lg">Video Üretici</h2>
@@ -360,24 +361,20 @@ export function VideoGenerator({ prompt: initialPrompt, onClose }: VideoGenerato
               <div className="flex gap-2 p-1 bg-secondary rounded-2xl">
                 <button
                   onClick={() => { setMode('ltx'); setDuration('10'); }}
-                  className={cn(
-                    "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all",
-                    mode === 'ltx'
-                      ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all"
+                  style={mode === 'ltx'
+                    ? { background: '#F0972E', color: '#0A0A0A', boxShadow: '0 2px 12px rgba(240,151,46,0.35)' }
+                    : { color: '#666' }}
                 >
                   <Zap className="w-4 h-4" />
                   Gerçek Video (LTX AI)
                 </button>
                 <button
                   onClick={() => { setMode('storyboard'); setDuration('30'); }}
-                  className={cn(
-                    "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all",
-                    mode === 'storyboard'
-                      ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all"
+                  style={mode === 'storyboard'
+                    ? { background: '#F0972E', color: '#0A0A0A', boxShadow: '0 2px 12px rgba(240,151,46,0.35)' }
+                    : { color: '#666' }}
                 >
                   <Film className="w-4 h-4" />
                   Storyboard
@@ -385,8 +382,8 @@ export function VideoGenerator({ prompt: initialPrompt, onClose }: VideoGenerato
               </div>
 
               {mode === 'ltx' && (
-                <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-2xl px-4 py-3 text-xs text-purple-300">
-                  LTX-Video 2.3 ile gerçek yapay zeka videosu &mdash; 1080p, ses dahil
+                <div className="rounded-2xl px-4 py-3 text-xs" style={{ background: 'rgba(240,151,46,0.08)', border: '1px solid rgba(240,151,46,0.18)', color: '#C8882A' }}>
+                  LTX-Video 2.3 ile gerçek yapay zeka videosu — 1080p, 10 sn'ye kadar
                 </div>
               )}
 
@@ -484,8 +481,8 @@ export function VideoGenerator({ prompt: initialPrompt, onClose }: VideoGenerato
                   </div>
                   <div className="w-full bg-border rounded-full h-1.5">
                     <div
-                      className="bg-gradient-to-r from-primary to-pink-500 h-1.5 rounded-full transition-all duration-700"
-                      style={{ width: `${progress}%` }}
+                      className="h-1.5 rounded-full transition-all duration-700"
+                      style={{ background: 'linear-gradient(90deg,#FFCA6A,#F0972E)', width: `${progress}%` }}
                     />
                   </div>
                   {mode === 'ltx' && (
@@ -504,8 +501,12 @@ export function VideoGenerator({ prompt: initialPrompt, onClose }: VideoGenerato
                   "w-full py-3.5 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all",
                   !prompt.trim() || isGenerating
                     ? "bg-secondary text-muted-foreground cursor-not-allowed"
-                    : "bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white shadow-lg"
+                    : "text-[#0A0A0A] shadow-lg"
                 )}
+                style={!prompt.trim() || isGenerating ? {} : {
+                  background: 'linear-gradient(135deg, #FFCA6A 0%, #F0972E 50%, #C46B14 100%)',
+                  boxShadow: '0 4px 20px rgba(240,151,46,0.40)'
+                }}
               >
                 {isGenerating
                   ? <><Loader2 className="w-4 h-4 animate-spin" />Üretiliyor...</>
@@ -540,7 +541,8 @@ export function VideoGenerator({ prompt: initialPrompt, onClose }: VideoGenerato
                     href={videoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white text-sm font-medium transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-[#0A0A0A] text-sm font-semibold transition-colors"
+                    style={{ background: 'linear-gradient(135deg,#FFCA6A,#F0972E,#C46B14)', boxShadow:'0 2px 14px rgba(240,151,46,0.35)' }}
                   >
                     <Download className="w-4 h-4" />
                     İndir / Aç
@@ -585,7 +587,8 @@ export function VideoGenerator({ prompt: initialPrompt, onClose }: VideoGenerato
                   <a
                     href={videoUrl}
                     download="omega-video.mp4"
-                    className="flex items-center justify-center gap-2 w-full py-2.5 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white text-sm font-medium transition-colors"
+                    className="flex items-center justify-center gap-2 w-full py-2.5 rounded-full text-[#0A0A0A] text-sm font-semibold transition-colors"
+                    style={{ background: 'linear-gradient(135deg,#FFCA6A,#F0972E,#C46B14)', boxShadow:'0 2px 14px rgba(240,151,46,0.35)' }}
                   >
                     <Download className="w-4 h-4" />
                     MP4 Olarak İndir

@@ -21,8 +21,8 @@ export default function AgentsPage() {
             className="flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] font-medium transition-all"
             style={{ background: '#161616', border: '1px solid #282828', color: '#888' }}
             onMouseEnter={e => {
-              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(212,137,58,0.35)';
-              (e.currentTarget as HTMLElement).style.color = '#D4893A';
+              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(240,151,46,0.35)';
+              (e.currentTarget as HTMLElement).style.color = '#F0972E';
             }}
             onMouseLeave={e => {
               (e.currentTarget as HTMLElement).style.borderColor = '#282828';
@@ -47,9 +47,9 @@ export default function AgentsPage() {
               >
                 <div
                   className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'rgba(212,137,58,0.1)', border: '1px solid rgba(212,137,58,0.2)' }}
+                  style={{ background: 'rgba(240,151,46,0.1)', border: '1px solid rgba(240,151,46,0.2)' }}
                 >
-                  <Icon className="w-4 h-4" style={{ color: '#D4893A' }} />
+                  <Icon className="w-4 h-4" style={{ color: '#F0972E' }} />
                 </div>
                 <div className="flex-1">
                   <div className="text-[13px] font-medium" style={{ color: '#D0D0D0' }}>{a.name}</div>

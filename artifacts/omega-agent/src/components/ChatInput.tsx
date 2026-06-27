@@ -194,7 +194,7 @@ Kullanıcı sorusu: ${text}`;
                 onClick={() => { setImageStyle(s.id); setShowImgStyles(false); }}
                 className="px-2.5 py-1 rounded-full text-[11px] font-medium transition-all"
                 style={imageStyle === s.id
-                  ? { background: '#D4893A', color: '#0A0A0A', border: '1px solid transparent' }
+                  ? { background: '#F0972E', color: '#0A0A0A', border: '1px solid transparent' }
                   : { background: 'transparent', border: '1px solid #282828', color: '#666' }
                 }
               >
@@ -217,24 +217,24 @@ Kullanıcı sorusu: ${text}`;
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all"
                 style={{
                   background: selectedModel === m.id ? '#1C1C1C' : 'transparent',
-                  borderLeft: selectedModel === m.id ? '2px solid #D4893A' : '2px solid transparent',
+                  borderLeft: selectedModel === m.id ? '2px solid #F0972E' : '2px solid transparent',
                   color: selectedModel === m.id ? '#E0E0E0' : '#777',
                 }}
                 onMouseEnter={e => { if (selectedModel !== m.id) (e.currentTarget as HTMLElement).style.background = '#161616'; }}
                 onMouseLeave={e => { if (selectedModel !== m.id) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
               >
-                <span style={{ color: selectedModel === m.id ? '#D4893A' : '#555' }}>{m.icon}</span>
+                <span style={{ color: selectedModel === m.id ? '#F0972E' : '#555' }}>{m.icon}</span>
                 <div className="flex-1">
                   <div className="text-[12px] font-semibold tracking-wide" style={{ letterSpacing: '0.05em' }}>{m.label}</div>
                 </div>
                 {m.badge && (
                   <span className="text-[9px] px-1.5 py-0.5 rounded font-bold tracking-wide"
-                    style={{ background: 'rgba(212,137,58,0.15)', color: '#D4893A', border: '1px solid rgba(212,137,58,0.25)', letterSpacing: '0.06em' }}>
+                    style={{ background: 'rgba(240,151,46,0.15)', color: '#F0972E', border: '1px solid rgba(240,151,46,0.25)', letterSpacing: '0.06em' }}>
                     {m.badge}
                   </span>
                 )}
                 {selectedModel === m.id && (
-                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#D4893A' }} />
+                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#F0972E' }} />
                 )}
               </button>
             ))}
@@ -266,7 +266,7 @@ Kullanıcı sorusu: ${text}`;
           disabled={isListening}
           rows={1}
           className="w-full bg-transparent text-[14px] leading-relaxed resize-none outline-none px-4 pt-4 pb-2 max-h-[180px]"
-          style={{ color: '#D0D0D0', caretColor: '#D4893A' }}
+          style={{ color: '#D0D0D0', caretColor: '#F0972E' }}
         />
 
         {/* Toolbar */}
@@ -278,13 +278,13 @@ Kullanıcı sorusu: ${text}`;
               onClick={() => { setShowModels(!showModels); setShowImgStyles(false); setShowFilePanel(false); }}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold tracking-wide transition-all"
               style={{
-                background: showModels ? 'rgba(212,137,58,0.12)' : 'transparent',
-                border: `1px solid ${showModels ? 'rgba(212,137,58,0.3)' : '#282828'}`,
-                color: showModels ? '#D4893A' : '#666',
+                background: showModels ? 'rgba(240,151,46,0.12)' : 'transparent',
+                border: `1px solid ${showModels ? 'rgba(240,151,46,0.3)' : '#282828'}`,
+                color: showModels ? '#F0972E' : '#666',
                 letterSpacing: '0.05em',
               }}
             >
-              <span style={{ color: showModels ? '#D4893A' : '#555' }}>{activeModel.icon}</span>
+              <span style={{ color: showModels ? '#F0972E' : '#555' }}>{activeModel.icon}</span>
               <span className="hidden sm:inline">{activeModel.label}</span>
               <ChevronDown className={cn('w-3 h-3 transition-transform', showModels && 'rotate-180')} />
             </button>
@@ -294,9 +294,9 @@ Kullanıcı sorusu: ${text}`;
               onClick={() => { setShowFilePanel(!showFilePanel); closeAll(); }}
               className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
               style={{
-                background: attachedFile ? 'rgba(34,197,94,0.1)' : showFilePanel ? 'rgba(212,137,58,0.1)' : 'transparent',
-                border: `1px solid ${attachedFile ? 'rgba(34,197,94,0.3)' : showFilePanel ? 'rgba(212,137,58,0.3)' : '#282828'}`,
-                color: attachedFile ? '#22c55e' : showFilePanel ? '#D4893A' : '#555',
+                background: attachedFile ? 'rgba(34,197,94,0.1)' : showFilePanel ? 'rgba(240,151,46,0.1)' : 'transparent',
+                border: `1px solid ${attachedFile ? 'rgba(34,197,94,0.3)' : showFilePanel ? 'rgba(240,151,46,0.3)' : '#282828'}`,
+                color: attachedFile ? '#22c55e' : showFilePanel ? '#F0972E' : '#555',
               }}
               title="Dosya yükle"
             >
@@ -309,7 +309,7 @@ Kullanıcı sorusu: ${text}`;
               className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
               style={{ border: '1px solid #282828', color: '#555', background: 'transparent' }}
               title="Web araştırması yap"
-              onMouseEnter={e => { (e.currentTarget.style.color = '#D4893A'); (e.currentTarget.style.borderColor = 'rgba(212,137,58,0.3)'); (e.currentTarget.style.background = 'rgba(212,137,58,0.08)'); }}
+              onMouseEnter={e => { (e.currentTarget.style.color = '#F0972E'); (e.currentTarget.style.borderColor = 'rgba(240,151,46,0.3)'); (e.currentTarget.style.background = 'rgba(240,151,46,0.08)'); }}
               onMouseLeave={e => { (e.currentTarget.style.color = '#555'); (e.currentTarget.style.borderColor = '#282828'); (e.currentTarget.style.background = 'transparent'); }}
             >
               <Globe className="w-3.5 h-3.5" />
@@ -320,9 +320,9 @@ Kullanıcı sorusu: ${text}`;
               onClick={() => { setShowImgStyles(!showImgStyles); setShowModels(false); setShowFilePanel(false); }}
               className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
               style={{
-                background: isImageRequest ? 'rgba(212,137,58,0.1)' : showImgStyles ? 'rgba(212,137,58,0.1)' : 'transparent',
-                border: `1px solid ${isImageRequest || showImgStyles ? 'rgba(212,137,58,0.3)' : '#282828'}`,
-                color: isImageRequest || showImgStyles ? '#D4893A' : '#555',
+                background: isImageRequest ? 'rgba(240,151,46,0.1)' : showImgStyles ? 'rgba(240,151,46,0.1)' : 'transparent',
+                border: `1px solid ${isImageRequest || showImgStyles ? 'rgba(240,151,46,0.3)' : '#282828'}`,
+                color: isImageRequest || showImgStyles ? '#F0972E' : '#555',
               }}
               title="Görsel stili"
             >
@@ -386,7 +386,7 @@ Kullanıcı sorusu: ${text}`;
                 disabled={!input.trim() && !attachedFile}
                 className="w-8 h-8 rounded-lg flex items-center justify-center transition-all flex-shrink-0"
                 style={input.trim()
-                  ? { background: '#D4893A', border: '1px solid transparent' }
+                  ? { background: '#F0972E', border: '1px solid transparent' }
                   : { background: '#181818', border: '1px solid #282828', cursor: 'not-allowed' }
                 }
               >

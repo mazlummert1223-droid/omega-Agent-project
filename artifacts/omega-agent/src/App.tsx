@@ -9,6 +9,7 @@ import AgentsPage from "@/pages/Agents";
 import ModelsPage from "@/pages/Models";
 import KnowledgePage from "@/pages/Knowledge";
 import ToolsPage from "@/pages/Tools";
+import SettingsPage from "@/pages/Settings";
 import { SecurityGuard } from "@/components/SecurityGuard";
 import { AuthScreen } from "@/pages/AuthScreen";
 import { getUser } from "@/lib/auth";
@@ -64,6 +65,7 @@ function Router() {
         <Route path="/models" component={ModelsPage} />
         <Route path="/knowledge" component={KnowledgePage} />
         <Route path="/tools" component={ToolsPage} />
+        <Route path="/settings" component={SettingsPage} />
         <Route component={NotFound} />
       </Switch>
     </MainLayout>

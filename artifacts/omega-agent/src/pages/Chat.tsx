@@ -63,7 +63,7 @@ export default function ChatPage() {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center" style={{ background: '#0A0A0A' }}>
-        <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#D4893A' }} />
+        <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#F0972E' }} />
       </div>
     );
   }
@@ -75,7 +75,7 @@ export default function ChatPage() {
           style={{ background: '#111', border: '1px solid #1E1E1E' }}>
           <h2 className="font-semibold text-base" style={{ color: '#E0E0E0' }}>Sohbet Bulunamadı</h2>
           <a href="/" className="px-4 py-2 rounded-full text-sm font-medium transition-all"
-            style={{ background: '#D4893A', color: '#0A0A0A' }}>
+            style={{ background: '#F0972E', color: '#0A0A0A' }}>
             Ana Sayfa
           </a>
         </div>
@@ -145,11 +145,11 @@ export default function ChatPage() {
                   <OmegaMark size={28} />
                 </div>
                 <div className="flex-1 max-w-xs pt-0.5">
-                  <div className="text-[13px] font-semibold font-display mb-2.5" style={{ color: '#D4893A' }}>Omega</div>
+                  <div className="text-[13px] font-semibold font-display mb-2.5" style={{ color: '#F0972E' }}>Omega</div>
                   <div className="relative rounded-xl overflow-hidden shimmer"
                     style={{ aspectRatio: '1/1', maxWidth: '280px', background: '#111', border: '1px solid #222' }}>
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                      <Loader2 className="w-7 h-7 animate-spin" style={{ color: 'rgba(212,137,58,0.5)' }} />
+                      <Loader2 className="w-7 h-7 animate-spin" style={{ color: 'rgba(240,151,46,0.5)' }} />
                       <p className="text-[12px] text-center px-4" style={{ color: '#555' }}>
                         Generating image…
                       </p>
@@ -170,9 +170,9 @@ export default function ChatPage() {
                 <OmegaMark size={28} />
               </div>
               <div className="flex items-center gap-1.5 pt-2">
-                <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(212,137,58,0.6)' }} />
-                <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(212,137,58,0.6)' }} />
-                <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(212,137,58,0.6)' }} />
+                <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(240,151,46,0.6)' }} />
+                <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(240,151,46,0.6)' }} />
+                <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(240,151,46,0.6)' }} />
               </div>
             </div>
           )}

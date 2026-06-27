@@ -26,8 +26,8 @@ export default function KnowledgePage() {
             className="flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] font-medium transition-all"
             style={{ background: '#161616', border: '1px solid #282828', color: '#888' }}
             onMouseEnter={e => {
-              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(212,137,58,0.35)';
-              (e.currentTarget as HTMLElement).style.color = '#D4893A';
+              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(240,151,46,0.35)';
+              (e.currentTarget as HTMLElement).style.color = '#F0972E';
             }}
             onMouseLeave={e => {
               (e.currentTarget as HTMLElement).style.borderColor = '#282828';
@@ -46,7 +46,7 @@ export default function KnowledgePage() {
               onClick={() => setTab(t)}
               className="flex-1 py-1.5 rounded-lg text-[12px] font-medium transition-all"
               style={tab === t
-                ? { background: '#1E1E1E', color: '#D4893A', border: '1px solid #2A2A2A' }
+                ? { background: '#1E1E1E', color: '#F0972E', border: '1px solid #2A2A2A' }
                 : { background: 'transparent', color: '#555', border: '1px solid transparent' }
               }
             >

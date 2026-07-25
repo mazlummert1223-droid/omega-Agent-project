@@ -75,8 +75,11 @@ router.post("/search", async (req, res) => {
 });
 
 router.post("/multi-task", async (req, res) => {
-  const body = AgentMultiTaskBody.parse(req.body);
-  const { task, conversationId } = body;
+  // Accept task from body directly; conversationId optional (may be string for local sessions)
+  const task: string = (req.body as any)?.task;
+  const rawId = (req.body as any)?.conversationId;
+  const conversationId: number | null = typeof rawId === "number" ? rawId : null;
+  if (!task) { res.status(400).json({ error: "task required" }); return; }
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");

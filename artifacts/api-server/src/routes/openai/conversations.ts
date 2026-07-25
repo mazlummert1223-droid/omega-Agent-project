@@ -319,14 +319,7 @@ function getConfig(agentMode: string): { modelList: string[]; systemPrompt: stri
       };
     case "quantum":
       return {
-        modelList: [
-          "nousresearch/hermes-3-llama-3.1-405b:free",
-          "qwen/qwen3-next-80b-a3b-instruct:free",
-          "inclusionai/ling-2.6-1t:free",
-          "meta-llama/llama-3.3-70b-instruct:free",
-          "google/gemma-4-31b-it:free",
-          "tencent/hy3-preview:free",
-        ],
+        modelList: MODEL_PRIORITY, // Full fallback list for reliability
         systemPrompt: `${base}\n\nOMEGA QUANTUM MODUndasın: En gelişmiş analiz ve akıl yürütme kapasitesiyle çalışırsın. Çok katmanlı düşünür, her konuyu derin ve sistematik şekilde ele alırsın. Karmaşık sorunları adım adım çözer, alternatif yaklaşımlar sunar, ve en doğru sonuca ulaşırsın. Yanıtların diğer modellerin ötesinde detaylı ve kesin olur.`,
       };
     case "multi":

@@ -1,79 +1,117 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { Menu, Search, BarChart2, PenLine, Zap, Paperclip, Globe, Image as ImageIcon, Hash, ArrowUp } from 'lucide-react';
+import { Menu, Paperclip, Globe, Image as ImageIcon, Hash, ArrowUp } from 'lucide-react';
 import { useSidebar } from '@/App';
 import { useLocalConversations } from '@/hooks/use-chat';
 
-/* ─── Big glowing Omega hero ─── */
+/* ─── Research / Analyze / Create / Automate icons (pixel-perfect SVG) ─── */
+function IconResearch() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+  );
+}
+function IconAnalyze() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 3v18h18"/><path d="m7 16 4-4 4 4 4-4"/>
+    </svg>
+  );
+}
+function IconCreate() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+    </svg>
+  );
+}
+function IconAutomate() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
+    </svg>
+  );
+}
+
+/* ─── Big glowing Omega hero — matches reference exactly ─── */
 function OmegaHero() {
   return (
-    <div className="relative flex flex-col items-center mb-10 select-none" style={{ paddingTop: 8 }}>
+    <div className="relative flex flex-col items-center mb-10 select-none" style={{ paddingTop: 20 }}>
 
-      {/* Wide ambient radial glow layer */}
-      <div className="absolute pointer-events-none animate-omega-pulse"
-        style={{
-          width: 420, height: 260, top: '18%', left: '50%',
-          transform: 'translate(-50%, -50%)',
-          background: 'radial-gradient(ellipse 70% 60% at 50% 50%, rgba(240,151,46,0.32) 0%, rgba(200,100,20,0.10) 60%, transparent 100%)',
-          filter: 'blur(32px)',
-        }}
-      />
-      {/* Inner tight glow */}
+      {/* === HUGE outer atmospheric glow (the wide warm halo in the reference) === */}
       <div className="absolute pointer-events-none"
         style={{
-          width: 200, height: 130, top: '14%', left: '50%',
+          width: 560, height: 320, top: '22%', left: '50%',
           transform: 'translate(-50%, -50%)',
-          background: 'radial-gradient(ellipse, rgba(255,210,120,0.30) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse 75% 55% at 50% 52%, rgba(220,130,30,0.38) 0%, rgba(180,90,10,0.18) 45%, rgba(140,60,5,0.07) 70%, transparent 100%)',
+          filter: 'blur(36px)',
+        }}
+      />
+
+      {/* === Wide glowing horizon arc below the Ω (distinctive in reference) === */}
+      <div className="absolute pointer-events-none"
+        style={{
+          width: 420, height: 60, top: '55%', left: '50%',
+          transform: 'translate(-50%, -50%)',
+          background: 'radial-gradient(ellipse 80% 100% at 50% 100%, rgba(240,151,46,0.22) 0%, rgba(200,110,20,0.08) 60%, transparent 100%)',
           filter: 'blur(18px)',
         }}
       />
 
-      {/* The Omega SVG — large, stroke-based */}
-      <div className="relative z-10 mb-7"
+      {/* === Inner concentrated glow around the Ω === */}
+      <div className="absolute pointer-events-none"
         style={{
-          filter: 'drop-shadow(0 0 28px rgba(240,151,46,0.75)) drop-shadow(0 0 70px rgba(200,100,20,0.35))',
+          width: 220, height: 160, top: '18%', left: '50%',
+          transform: 'translate(-50%, -50%)',
+          background: 'radial-gradient(ellipse, rgba(255,215,130,0.35) 0%, rgba(240,151,46,0.15) 50%, transparent 80%)',
+          filter: 'blur(16px)',
+        }}
+      />
+
+      {/* === The Ω SVG — large, stroke-based, gradient fill === */}
+      <div className="relative z-10 mb-8"
+        style={{
+          filter:
+            'drop-shadow(0 0 22px rgba(255,200,80,0.90)) ' +
+            'drop-shadow(0 0 55px rgba(230,130,30,0.55)) ' +
+            'drop-shadow(0 0 110px rgba(190,90,10,0.30))',
         }}>
-        <svg width="140" height="148" viewBox="0 0 40 42" fill="none">
+        <svg width="148" height="156" viewBox="0 0 40 42" fill="none">
           <defs>
-            <linearGradient id="heroOmegaGrad" x1="4" y1="2" x2="36" y2="40" gradientUnits="userSpaceOnUse">
-              <stop offset="0%"   stopColor="#FFE08A" />
-              <stop offset="38%"  stopColor="#F5A030" />
-              <stop offset="100%" stopColor="#BE6010" />
+            <linearGradient id="heroOmG" x1="4" y1="2" x2="36" y2="40" gradientUnits="userSpaceOnUse">
+              <stop offset="0%"   stopColor="#FFE59A" />
+              <stop offset="30%"  stopColor="#F5A832" />
+              <stop offset="70%"  stopColor="#E07A14" />
+              <stop offset="100%" stopColor="#BE5C08" />
             </linearGradient>
           </defs>
-          {/* Outer glow ring */}
+          {/* Subtle bloom ring */}
           <path
             d="M 9,34 L 9,27 A 11,11 0 1 1 31,27 L 31,34"
-            fill="none"
-            stroke="rgba(255,210,100,0.18)"
-            strokeWidth="9"
-            strokeLinecap="round"
+            fill="none" stroke="rgba(255,220,100,0.14)" strokeWidth="10" strokeLinecap="round"
           />
-          {/* Main arc */}
+          {/* Main horseshoe arc */}
           <path
             d="M 9,34 L 9,27 A 11,11 0 1 1 31,27 L 31,34"
-            fill="none"
-            stroke="url(#heroOmegaGrad)"
-            strokeWidth="5.5"
-            strokeLinecap="round"
+            fill="none" stroke="url(#heroOmG)" strokeWidth="5.2" strokeLinecap="round"
           />
           {/* Left foot */}
-          <path d="M 4,39 L 15,39" fill="none" stroke="url(#heroOmegaGrad)" strokeWidth="4" strokeLinecap="round" />
+          <path d="M 4,39 L 15,39" fill="none" stroke="url(#heroOmG)" strokeWidth="3.8" strokeLinecap="round" />
           {/* Right foot */}
-          <path d="M 25,39 L 36,39" fill="none" stroke="url(#heroOmegaGrad)" strokeWidth="4" strokeLinecap="round" />
+          <path d="M 25,39 L 36,39" fill="none" stroke="url(#heroOmG)" strokeWidth="3.8" strokeLinecap="round" />
         </svg>
       </div>
 
       {/* Text */}
-      <h1 className="font-display font-bold"
-        style={{ color: '#EFEFEF', letterSpacing: '0.20em', fontSize: '2.05rem', lineHeight: 1 }}>
+      <h1 className="font-display font-bold tracking-widest"
+        style={{ color: '#EFEFEF', letterSpacing: '0.22em', fontSize: '2.15rem', lineHeight: 1 }}>
         OMEGA
       </h1>
-      <p className="mt-2 font-semibold"
-        style={{ color: '#525252', letterSpacing: '0.30em', fontSize: '10px' }}>
+      <p className="mt-[7px] font-semibold tracking-[0.32em] text-[10px]" style={{ color: '#4A4A4A' }}>
         AI AGENT
       </p>
-      <p className="mt-4 text-[14px]" style={{ color: '#5A5A5A' }}>
+      <p className="mt-5 text-[14px] font-medium" style={{ color: '#505050', letterSpacing: '0.02em' }}>
         Clarity. Intelligence. Results.
       </p>
     </div>
@@ -98,9 +136,19 @@ function HomePromptBar({ onSend }: { onSend: (text: string, mode: string) => voi
     setText('');
   };
 
+  const active = text.trim().length > 0;
+
   return (
-    <div className="w-full rounded-2xl transition-all duration-200 input-glow"
-      style={{ background: '#111', border: '1px solid #1E1E1E', boxShadow: '0 4px 30px rgba(0,0,0,0.5)' }}>
+    <div
+      className="w-full rounded-2xl transition-all duration-200"
+      style={{
+        background: '#111114',
+        border: active ? '1px solid rgba(240,151,46,0.30)' : '1px solid #1E1E22',
+        boxShadow: active
+          ? '0 0 0 3px rgba(240,151,46,0.06), 0 6px 40px rgba(0,0,0,0.60)'
+          : '0 6px 40px rgba(0,0,0,0.50)',
+        transition: 'border-color 0.2s, box-shadow 0.2s',
+      }}>
       <textarea
         ref={ref}
         value={text}
@@ -115,16 +163,16 @@ function HomePromptBar({ onSend }: { onSend: (text: string, mode: string) => voi
       <div className="flex items-center justify-between px-4 pb-3.5 gap-2">
         <div className="flex items-center gap-1.5">
           {[
-            { icon: <Paperclip className="w-4 h-4" />, label: 'Attach' },
-            { icon: <Globe     className="w-4 h-4" />, label: 'Web search', onClick: () => submit('researcher') },
-            { icon: <ImageIcon className="w-4 h-4" />, label: 'Image' },
-            { icon: <Hash      className="w-4 h-4" />, label: 'More' },
+            { icon: <Paperclip className="w-[15px] h-[15px]" />, label: 'Attach' },
+            { icon: <Globe     className="w-[15px] h-[15px]" />, label: 'Web search', onClick: () => submit('researcher') },
+            { icon: <ImageIcon className="w-[15px] h-[15px]" />, label: 'Image' },
+            { icon: <Hash      className="w-[15px] h-[15px]" />, label: 'More' },
           ].map((btn, i) => (
             <button key={i} title={btn.label} onClick={btn.onClick}
               className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
-              style={{ color: '#484848', border: '1px solid #1E1E1E', background: 'transparent' }}
-              onMouseEnter={e => { (e.currentTarget.style.color = '#B8B8B8'); (e.currentTarget.style.background = '#1C1C1C'); (e.currentTarget.style.borderColor = '#2A2A2A'); }}
-              onMouseLeave={e => { (e.currentTarget.style.color = '#484848'); (e.currentTarget.style.background = 'transparent'); (e.currentTarget.style.borderColor = '#1E1E1E'); }}
+              style={{ color: '#3E3E3E', background: 'transparent', border: '1px solid #202024' }}
+              onMouseEnter={e => { (e.currentTarget.style.color = '#A8A8A8'); (e.currentTarget.style.background = '#1C1C20'); (e.currentTarget.style.borderColor = '#2C2C30'); }}
+              onMouseLeave={e => { (e.currentTarget.style.color = '#3E3E3E'); (e.currentTarget.style.background = 'transparent'); (e.currentTarget.style.borderColor = '#202024'); }}
             >
               {btn.icon}
             </button>
@@ -132,12 +180,12 @@ function HomePromptBar({ onSend }: { onSend: (text: string, mode: string) => voi
         </div>
         <button onClick={() => submit()}
           className="w-8 h-8 rounded-lg flex items-center justify-center transition-all flex-shrink-0"
-          style={text.trim()
-            ? { background: '#F0972E', border: '1px solid transparent', boxShadow: '0 2px 12px rgba(240,151,46,0.35)' }
-            : { background: '#181818', border: '1px solid #252525', cursor: 'not-allowed' }
+          style={active
+            ? { background: 'linear-gradient(135deg,#F5C842,#F0972E)', border: '1px solid transparent', boxShadow: '0 2px 14px rgba(240,151,46,0.40)' }
+            : { background: '#181820', border: '1px solid #252530', cursor: 'not-allowed' }
           }
         >
-          <ArrowUp className="w-4 h-4" style={{ color: text.trim() ? '#0A0A0A' : '#383838' }} />
+          <ArrowUp className="w-4 h-4" style={{ color: active ? '#0A0A0A' : '#363640' }} />
         </button>
       </div>
     </div>
@@ -146,16 +194,22 @@ function HomePromptBar({ onSend }: { onSend: (text: string, mode: string) => voi
 
 /* ─── Action cards ─── */
 const CARDS = [
-  { Icon: Search,    label: 'Research',  desc: 'In-depth research\non any topic',    prompt: 'Research the latest AI trends in 2025', mode: 'researcher' },
-  { Icon: BarChart2, label: 'Analyze',   desc: 'Analyze data and\nderive insights',  prompt: 'Help me analyze this dataset',           mode: 'coder' },
-  { Icon: PenLine,   label: 'Create',    desc: 'Generate content\nand visuals',      prompt: 'Write a creative piece for me',          mode: 'auto' },
-  { Icon: Zap,       label: 'Automate',  desc: 'Automate tasks\nand workflows',      prompt: 'Help me automate a complex workflow',    mode: 'quantum' },
+  { label: 'Research',  desc: 'In-depth research\non any topic',    prompt: 'Research the latest AI trends in 2025', mode: 'researcher' },
+  { label: 'Analyze',   desc: 'Analyze data and\nderive insights',  prompt: 'Help me analyze this dataset',           mode: 'coder' },
+  { label: 'Create',    desc: 'Generate content\nand visuals',      prompt: 'Write a creative piece for me',          mode: 'auto' },
+  { label: 'Automate',  desc: 'Automate tasks\nand workflows',      prompt: 'Help me automate a complex workflow',    mode: 'quantum' },
+];
+
+const CARD_ICONS = [
+  <IconResearch key="r" />, <IconAnalyze key="a" />, <IconCreate key="c" />,
+  <svg key="z" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg>,
 ];
 
 export default function Home() {
   const [, setLocation] = useLocation();
   const { toggle } = useSidebar();
   const { create } = useLocalConversations();
+  const [hovered, setHovered] = useState<number | null>(null);
 
   const start = (prompt: string, mode = 'auto') => {
     const conv = create(prompt.slice(0, 50));
@@ -164,17 +218,17 @@ export default function Home() {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden" style={{ background: '#0B0B0B' }}>
+    <div className="flex-1 flex flex-col overflow-hidden" style={{ background: '#090909' }}>
       {/* Mobile header */}
-      <div className="md:hidden flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid #191919' }}>
+      <div className="md:hidden flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid #181818' }}>
         <button onClick={toggle} className="p-1.5 rounded-lg" style={{ color: '#555' }}>
           <Menu className="w-5 h-5" />
         </button>
       </div>
 
-      {/* Centered content */}
+      {/* Main content */}
       <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-5 py-10">
-        <div className="w-full max-w-[600px] flex flex-col items-center animate-fade-up">
+        <div className="w-full max-w-[600px] flex flex-col items-center" style={{ animation: 'fadeUp 0.5s ease both' }}>
 
           <OmegaHero />
 
@@ -186,39 +240,47 @@ export default function Home() {
           {/* Action cards */}
           <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {CARDS.map((card, i) => {
-              const [hov, setHov] = useState(false);
-              const Icon = card.Icon;
+              const isHov = hovered === i;
               return (
                 <button key={i}
                   onClick={() => start(card.prompt, card.mode)}
-                  onMouseEnter={() => setHov(true)}
-                  onMouseLeave={() => setHov(false)}
+                  onMouseEnter={() => setHovered(i)}
+                  onMouseLeave={() => setHovered(null)}
                   className="flex flex-col gap-3 p-4 rounded-2xl text-left transition-all duration-200"
                   style={{
-                    background: hov ? '#181818' : '#111',
-                    border: `1px solid ${hov ? '#272727' : '#1C1C1C'}`,
-                    transform: hov ? 'translateY(-2px)' : 'none',
-                    boxShadow: hov ? '0 8px 30px rgba(0,0,0,0.6)' : 'none',
+                    background: isHov ? '#161618' : '#101012',
+                    border: `1px solid ${isHov ? '#262628' : '#1A1A1C'}`,
+                    transform: isHov ? 'translateY(-2px)' : 'none',
+                    boxShadow: isHov ? '0 8px 30px rgba(0,0,0,0.7)' : 'none',
                   }}>
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
                     style={{
-                      background: hov ? 'rgba(240,151,46,0.14)' : '#1A1A1A',
-                      border: `1px solid ${hov ? 'rgba(240,151,46,0.28)' : '#242424'}`,
+                      background: isHov ? 'rgba(240,151,46,0.13)' : '#181818',
+                      border: `1px solid ${isHov ? 'rgba(240,151,46,0.26)' : '#242424'}`,
+                      color: isHov ? '#F0972E' : '#424242',
                     }}>
-                    <Icon className="w-[17px] h-[17px]" style={{ color: hov ? '#F0972E' : '#484848' }} />
+                    {CARD_ICONS[i]}
                   </div>
                   <div>
                     <div className="text-[12.5px] font-semibold mb-0.5"
-                      style={{ color: hov ? '#E0E0E0' : '#777' }}>{card.label}</div>
-                    <div className="text-[11.5px] leading-relaxed whitespace-pre-line"
-                      style={{ color: hov ? '#555' : '#333' }}>{card.desc}</div>
+                      style={{ color: isHov ? '#E0E0E0' : '#666' }}>{card.label}</div>
+                    <div className="text-[11px] leading-relaxed whitespace-pre-line"
+                      style={{ color: isHov ? '#4A4A4A' : '#2E2E2E' }}>{card.desc}</div>
                   </div>
                 </button>
               );
             })}
           </div>
+
         </div>
       </div>
+
+      <style>{`
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(18px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }

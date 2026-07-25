@@ -215,7 +215,7 @@ function mutateDay(field: keyof Omit<DayStats, "date" | "lastActive">) {
   const all = loadStats();
   const d = today();
   if (!all[d]) all[d] = { date: d, requests: 0, blocked: 0, suspicious: 0, lastActive: new Date().toISOString() };
-  (all[d] as Record<string, unknown>)[field] = ((all[d] as Record<string, unknown>)[field] as number ?? 0) + 1;
+  (all[d] as unknown as Record<string, unknown>)[field] = (((all[d] as unknown as Record<string, unknown>)[field] as number) ?? 0) + 1;
   all[d].lastActive = new Date().toISOString();
   saveStats(all);
 }

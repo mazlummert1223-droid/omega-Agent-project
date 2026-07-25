@@ -73,18 +73,19 @@ function Router() {
 }
 
 export default function App() {
-  const [authed, setAuthed] = useState<boolean | null>(null);
+  // Auth is now automatic (guest user created on first visit)
+  // AuthScreen shown only when explicitly requested via /login route
+  const [showAuth, setShowAuth] = useState(false);
 
   useEffect(() => {
-    setAuthed(!!getUser());
+    // Ensure a guest user exists immediately
+    getUser();
   }, []);
 
-  if (authed === null) return null; // brief flicker guard
-
-  if (!authed) {
+  if (showAuth) {
     return (
       <>
-        <AuthScreen onAuth={() => setAuthed(true)} />
+        <AuthScreen onAuth={() => setShowAuth(false)} />
         <Toaster theme="dark" position="top-center" toastOptions={{ style: { background: "hsl(0 0% 10%)", border: "1px solid hsl(0 0% 18%)", color: "hsl(0 0% 88%)", borderRadius: "10px", fontSize: "13px" } }} />
       </>
     );

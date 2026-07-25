@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Paintbrush, Bell, Shield, Zap, CreditCard, Code2, Info,
-  Sun, Moon, Monitor, ChevronRight, Toggle
+  Sun, Moon, Monitor, ChevronRight
 } from 'lucide-react';
 import { signOut } from '@/lib/auth';
 import { getUser } from '@/lib/auth';

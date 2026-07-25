@@ -69,38 +69,22 @@ function OmegaHero() {
         }}
       />
 
-      {/* === The Ω SVG — large, stroke-based, gradient fill === */}
-      <div className="relative z-10 mb-8"
-        style={{
-          filter:
-            'drop-shadow(0 0 22px rgba(255,200,80,0.90)) ' +
-            'drop-shadow(0 0 55px rgba(230,130,30,0.55)) ' +
-            'drop-shadow(0 0 110px rgba(190,90,10,0.30))',
-        }}>
-        <svg width="148" height="156" viewBox="0 0 40 42" fill="none">
-          <defs>
-            <linearGradient id="heroOmG" x1="4" y1="2" x2="36" y2="40" gradientUnits="userSpaceOnUse">
-              <stop offset="0%"   stopColor="#FFE59A" />
-              <stop offset="30%"  stopColor="#F5A832" />
-              <stop offset="70%"  stopColor="#E07A14" />
-              <stop offset="100%" stopColor="#BE5C08" />
-            </linearGradient>
-          </defs>
-          {/* Subtle bloom ring */}
-          <path
-            d="M 9,34 L 9,27 A 11,11 0 1 1 31,27 L 31,34"
-            fill="none" stroke="rgba(255,220,100,0.14)" strokeWidth="10" strokeLinecap="round"
-          />
-          {/* Main horseshoe arc */}
-          <path
-            d="M 9,34 L 9,27 A 11,11 0 1 1 31,27 L 31,34"
-            fill="none" stroke="url(#heroOmG)" strokeWidth="5.2" strokeLinecap="round"
-          />
-          {/* Left foot */}
-          <path d="M 4,39 L 15,39" fill="none" stroke="url(#heroOmG)" strokeWidth="3.8" strokeLinecap="round" />
-          {/* Right foot */}
-          <path d="M 25,39 L 36,39" fill="none" stroke="url(#heroOmG)" strokeWidth="3.8" strokeLinecap="round" />
-        </svg>
+      {/* === Real Omega logo — mix-blend-mode removes dark box === */}
+      <div className="relative z-10 mb-8">
+        <img
+          src="/omega-logo.png"
+          alt="Omega"
+          width={168}
+          height={168}
+          style={{
+            objectFit: 'contain',
+            mixBlendMode: 'screen',
+            filter:
+              'drop-shadow(0 0 28px rgba(255,210,80,0.90)) ' +
+              'drop-shadow(0 0 60px rgba(230,130,30,0.55)) ' +
+              'drop-shadow(0 0 120px rgba(190,90,10,0.30))',
+          }}
+        />
       </div>
 
       {/* Text */}

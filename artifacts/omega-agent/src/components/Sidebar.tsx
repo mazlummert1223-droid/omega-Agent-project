@@ -6,7 +6,7 @@ import { useSidebar } from '@/App';
 import { useLocalConversations } from '@/hooks/use-chat';
 import { getUser, signOut } from '@/lib/auth';
 
-/* ─── Omega Logo — uses actual uploaded glow image ─── */
+/* ─── Omega Logo — mix-blend-mode:screen removes dark background box ─── */
 export function OmegaLogo({ size = 36 }: { size?: number }) {
   return (
     <img
@@ -14,7 +14,11 @@ export function OmegaLogo({ size = 36 }: { size?: number }) {
       alt="Omega"
       width={size}
       height={size}
-      style={{ objectFit: 'contain', filter: 'drop-shadow(0 0 10px rgba(240,151,46,0.75))' }}
+      style={{
+        objectFit: 'contain',
+        mixBlendMode: 'screen',
+        filter: 'drop-shadow(0 0 10px rgba(255,200,80,0.8))',
+      }}
     />
   );
 }
@@ -27,7 +31,11 @@ export function OmegaMark({ size = 22 }: { size?: number }) {
       alt="Ω"
       width={size}
       height={size}
-      style={{ objectFit: 'contain', filter: 'drop-shadow(0 0 6px rgba(240,151,46,0.6))' }}
+      style={{
+        objectFit: 'contain',
+        mixBlendMode: 'screen',
+        filter: 'drop-shadow(0 0 5px rgba(255,200,80,0.65))',
+      }}
     />
   );
 }

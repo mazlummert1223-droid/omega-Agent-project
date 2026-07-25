@@ -191,10 +191,48 @@ export function useChatStream(conversationId: string | null) {
         }
       }
 
-      /* Save AI response to local storage */
-      const finalText = isMulti ? synthFull : fullText;
-      if (finalText) {
-        LocalDB.addMessage(conversationId, 'assistant', finalText);
+      /* Save AI response to local storage — process special markers */
+      const rawText = isMulti ? synthFull : fullText;
+      if (rawText) {
+        const IMG_GEN_RE   = /\[GENERATE_IMAGE:\s*([\s\S]*?)\]/gi;
+        const VID_GEN_RE   = /\[GENERATE_VIDEO:\s*([\s\S]*?)\]/gi;
+        const APP_GEN_RE   = /\[BUILD_APP\]\s*([\s\S]*?)\[\/BUILD_APP\]/gi;
+
+        const imagePrompts = [...rawText.matchAll(IMG_GEN_RE)].map(m => m[1].trim());
+        const videoPrompts = [...rawText.matchAll(VID_GEN_RE)].map(m => m[1].trim());
+        const appCodes     = [...rawText.matchAll(APP_GEN_RE)].map(m => m[1].trim());
+
+        const cleanText = rawText
+          .replace(IMG_GEN_RE, '')
+          .replace(VID_GEN_RE, '')
+          .replace(APP_GEN_RE, '')
+          .trim();
+
+        if (cleanText) {
+          LocalDB.addMessage(conversationId, 'assistant', cleanText);
+        }
+
+        // Generate images via API
+        for (const prompt of imagePrompts) {
+          try {
+            const r = await fetch('/api/openai/generate-image', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ prompt }),
+            });
+            const data = await r.json();
+            if (data.url) LocalDB.addMessage(conversationId, 'assistant', `${IMG_MARKER}${data.url}`);
+          } catch {}
+        }
+
+        // Store video and app markers as separate messages
+        for (const prompt of videoPrompts) {
+          LocalDB.addMessage(conversationId, 'assistant', `__VIDEO__:${prompt}`);
+        }
+        for (const code of appCodes) {
+          LocalDB.addMessage(conversationId, 'assistant', `__APP__:${code}`);
+        }
+
         dispatchConvUpdate();
       }
     } catch {}

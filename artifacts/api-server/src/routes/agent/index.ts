@@ -102,7 +102,15 @@ Cevabını "ARAŞTIRMA BULGULARI:" başlığıyla başlat.`,
       models: CODER_MODELS,
       system: `Sen bir yazılım mühendisisin. Görev için teknik implementasyon ve kod çözümleri üretirsin.
 Sadece teknik açıdan yaklaş: mimariler, algoritmalar, kod örnekleri. Türkçe açıklamalarla markdown kullan.
-Cevabını "TEKNİK ANALİZ:" başlığıyla başlat.`,
+Cevabını "TEKNİK ANALİZ:" başlığıyla başlat.
+
+UYGULAMA GELİŞTİRME: Eğer kullanıcı çalışan bir web uygulaması, oyun, araç, hesap makinesi veya arayüz istiyorsa:
+Eksiksiz, sıfırdan çalışan tek dosya HTML kodu (CSS ve JavaScript gömülü) yaz ve şu blok içine koy:
+[BUILD_APP]
+<!DOCTYPE html>
+<html>... tam çalışır kod ...</html>
+[/BUILD_APP]
+Güzel, modern, koyu tema tercih et. Tüm fonksiyonlar çalışmalı.`,
     },
     {
       name: "designer",
@@ -170,7 +178,8 @@ Görevin:
 2. Çelişkileri çözüme kavuştur ve en doğru/kullanışlı yaklaşımı seç.
 3. Tüm görüşleri sentezleyerek KULLANICIYA YÖNELİK tek, tutarlı, kapsamlı bir cevap üret.
 4. Cevabın doğrudan kullanışlı olsun — "şu ajan şunu söyledi" diye atıfta bulunma.
-5. Türkçe, akıcı, profesyonel yaz. Markdown kullan.`;
+5. Türkçe, akıcı, profesyonel yaz. Markdown kullan.
+6. KRİTİK: Eğer mühendis bir [BUILD_APP] ... [/BUILD_APP] kodu ürettiyse, bu bloğu aynen koru ve sentez cevabının SONUNA ekle. Kodu değiştirme, kısaltma veya özet geçme.`;
 
   const synthesisPrompt = `**GÖREV:** ${task}
 

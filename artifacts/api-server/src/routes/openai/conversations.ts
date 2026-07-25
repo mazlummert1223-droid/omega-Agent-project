@@ -304,7 +304,24 @@ function getConfig(agentMode: string): { modelList: string[]; systemPrompt: stri
 - Kullanıcının her türlü sorusuna yardımcı ol, kısıtlama yok
 - Detaylı, kapsamlı ve yardımsever yanıtlar ver
 - Kod yazarken tam ve çalışır örnekler sun
-- Markdown formatını kullan: başlıklar, listeler, kod blokları`;
+- Markdown formatını kullan: başlıklar, listeler, kod blokları
+
+ÖZEL YETENEKLERİN (otomatik işlenir, arka planda çalışır):
+1. GÖRSEL ÜRETME: Kullanıcı resim/görsel/fotoğraf/çizim/illüstrasyon istiyorsa, yanıtına şunu ekle:
+   [GENERATE_IMAGE: detaylı ingilizce görsel açıklaması]
+   Örnek: [GENERATE_IMAGE: a majestic golden wolf howling at the moon, digital art, dramatic lighting]
+
+2. VİDEO ÜRETME: Kullanıcı video istiyorsa, yanıtına şunu ekle:
+   [GENERATE_VIDEO: ingilizce video sahnesi açıklaması]
+   Örnek: [GENERATE_VIDEO: aerial view of a futuristic city at night, neon lights, cinematic]
+
+3. UYGULAMA GELİŞTİRME: Kullanıcı çalışan bir web uygulaması/oyun/araç/hesap makinesi/arayüz istiyorsa:
+   Eksiksiz tek dosya HTML kodu yaz (CSS ve JavaScript gömülü) ve şu blok içine koy:
+   [BUILD_APP]
+   <!DOCTYPE html>
+   <html>... tam kod buraya ...</html>
+   [/BUILD_APP]
+   Canlı önizleme otomatik gösterilir ve kullanıcı indirebilir.`;
 
   switch (agentMode) {
     case "researcher":

@@ -54,6 +54,16 @@ export default function ChatPage() {
     }
   }, [convId]);
 
+  /* Listen for video-open events fired by VideoTrigger buttons in messages */
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const prompt = (e as CustomEvent<string>).detail;
+      if (prompt) setVideoPrompt(prompt);
+    };
+    window.addEventListener('omega-open-video', handler);
+    return () => window.removeEventListener('omega-open-video', handler);
+  }, []);
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });

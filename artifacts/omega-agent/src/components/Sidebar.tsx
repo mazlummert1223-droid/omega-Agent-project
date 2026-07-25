@@ -6,63 +6,29 @@ import { useSidebar } from '@/App';
 import { useLocalConversations } from '@/hooks/use-chat';
 import { getUser, signOut } from '@/lib/auth';
 
-/* ─── Omega Logo — stroke-based Ω mark ─── */
+/* ─── Omega Logo — uses actual uploaded glow image ─── */
 export function OmegaLogo({ size = 36 }: { size?: number }) {
-  const id = `og-${size}`;
   return (
-    <svg width={size} height={size} viewBox="0 0 40 42" fill="none">
-      <defs>
-        <linearGradient id={id} x1="4" y1="4" x2="36" y2="40" gradientUnits="userSpaceOnUse">
-          <stop offset="0%"   stopColor="#FFCA6A" />
-          <stop offset="45%"  stopColor="#F0972E" />
-          <stop offset="100%" stopColor="#C46B14" />
-        </linearGradient>
-      </defs>
-      {/* Main horseshoe arc */}
-      <path
-        d="M 9,34 L 9,27 A 11,11 0 1 1 31,27 L 31,34"
-        fill="none"
-        stroke={`url(#${id})`}
-        strokeWidth="5.5"
-        strokeLinecap="round"
-      />
-      {/* Left foot */}
-      <path
-        d="M 4,39 L 15,39"
-        fill="none"
-        stroke={`url(#${id})`}
-        strokeWidth="4"
-        strokeLinecap="round"
-      />
-      {/* Right foot */}
-      <path
-        d="M 25,39 L 36,39"
-        fill="none"
-        stroke={`url(#${id})`}
-        strokeWidth="4"
-        strokeLinecap="round"
-      />
-    </svg>
+    <img
+      src="/omega-logo.png"
+      alt="Omega"
+      width={size}
+      height={size}
+      style={{ objectFit: 'contain', filter: 'drop-shadow(0 0 10px rgba(240,151,46,0.75))' }}
+    />
   );
 }
 
 /* ─── Small mark for message bubbles ─── */
 export function OmegaMark({ size = 22 }: { size?: number }) {
-  const id = `om-${size}`;
   return (
-    <svg width={size} height={size} viewBox="0 0 40 42" fill="none">
-      <defs>
-        <linearGradient id={id} x1="4" y1="4" x2="36" y2="40" gradientUnits="userSpaceOnUse">
-          <stop offset="0%"   stopColor="#FFCA6A" />
-          <stop offset="45%"  stopColor="#F0972E" />
-          <stop offset="100%" stopColor="#C46B14" />
-        </linearGradient>
-      </defs>
-      <path d="M 9,34 L 9,27 A 11,11 0 1 1 31,27 L 31,34"
-        fill="none" stroke={`url(#${id})`} strokeWidth="5.5" strokeLinecap="round" />
-      <path d="M 4,39 L 15,39" fill="none" stroke={`url(#${id})`} strokeWidth="4" strokeLinecap="round" />
-      <path d="M 25,39 L 36,39" fill="none" stroke={`url(#${id})`} strokeWidth="4" strokeLinecap="round" />
-    </svg>
+    <img
+      src="/omega-logo.png"
+      alt="Ω"
+      width={size}
+      height={size}
+      style={{ objectFit: 'contain', filter: 'drop-shadow(0 0 6px rgba(240,151,46,0.6))' }}
+    />
   );
 }
 

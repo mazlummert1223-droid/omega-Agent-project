@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Trash2, Loader2, Plus, Home, Users, Cpu, BookOpen, Wrench, ChevronDown, Settings } from 'lucide-react';
+import { Trash2, Loader2, Plus, Home, Users, Cpu, BookOpen, Wrench, ChevronDown, Settings, Code2 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { useSidebar } from '@/App';
 import { useLocalConversations } from '@/hooks/use-chat';
 import { getUser, signOut } from '@/lib/auth';
 
-/* ─── Omega Logo — mix-blend-mode:screen removes dark background box ─── */
+/* ─── Omega Logo — SVG luminance→alpha filter removes dark background ─── */
 export function OmegaLogo({ size = 36 }: { size?: number }) {
   return (
     <img
@@ -16,8 +16,7 @@ export function OmegaLogo({ size = 36 }: { size?: number }) {
       height={size}
       style={{
         objectFit: 'contain',
-        mixBlendMode: 'screen',
-        filter: 'drop-shadow(0 0 10px rgba(255,200,80,0.8))',
+        filter: 'url(#omega-logo-filter) drop-shadow(0 0 8px rgba(255,200,80,0.9))',
       }}
     />
   );
@@ -33,8 +32,7 @@ export function OmegaMark({ size = 22 }: { size?: number }) {
       height={size}
       style={{
         objectFit: 'contain',
-        mixBlendMode: 'screen',
-        filter: 'drop-shadow(0 0 5px rgba(255,200,80,0.65))',
+        filter: 'url(#omega-logo-filter) drop-shadow(0 0 5px rgba(255,200,80,0.75))',
       }}
     />
   );
@@ -42,6 +40,7 @@ export function OmegaMark({ size = 22 }: { size?: number }) {
 
 const NAV_ITEMS = [
   { href: '/',          label: 'Home',      Icon: Home },
+  { href: '/apps',      label: 'My Apps',   Icon: Code2 },
   { href: '/agents',    label: 'Agents',    Icon: Users },
   { href: '/models',    label: 'Models',    Icon: Cpu },
   { href: '/knowledge', label: 'Knowledge', Icon: BookOpen },

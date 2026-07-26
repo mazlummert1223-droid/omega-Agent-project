@@ -69,7 +69,7 @@ function OmegaHero() {
         }}
       />
 
-      {/* === Real Omega logo — mix-blend-mode removes dark box === */}
+      {/* === Real Omega logo — SVG luminance→alpha filter removes dark background === */}
       <div className="relative z-10 mb-8">
         <img
           src="/omega-logo.png"
@@ -78,11 +78,12 @@ function OmegaHero() {
           height={168}
           style={{
             objectFit: 'contain',
-            mixBlendMode: 'screen',
+            display: 'block',
             filter:
-              'drop-shadow(0 0 28px rgba(255,210,80,0.90)) ' +
-              'drop-shadow(0 0 60px rgba(230,130,30,0.55)) ' +
-              'drop-shadow(0 0 120px rgba(190,90,10,0.30))',
+              'url(#omega-logo-filter) ' +
+              'drop-shadow(0 0 30px rgba(255,210,80,0.95)) ' +
+              'drop-shadow(0 0 70px rgba(230,130,30,0.65)) ' +
+              'drop-shadow(0 0 140px rgba(190,90,10,0.40))',
           }}
         />
       </div>

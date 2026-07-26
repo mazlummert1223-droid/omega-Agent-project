@@ -2,67 +2,112 @@ import { Router, type IRouter } from "express";
 import { openrouter } from "@workspace/integrations-openrouter-ai";
 import { db } from "@workspace/db";
 import { messages } from "@workspace/db";
-import { AgentWebSearchBody, AgentMultiTaskBody } from "@workspace/api-zod";
 
-const FALLBACK_MODELS = [
+/* ─── Model lists — each agent starts with DIFFERENT primary models
+   to avoid rate-limit collisions when running in parallel ─── */
+const RESEARCHER_MODELS = [
+  "nousresearch/hermes-3-llama-3.1-405b:free",
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "google/gemma-4-31b-it:free",
+  "inclusionai/ling-2.6-1t:free",
+  "qwen/qwen3-next-80b-a3b-instruct:free",
+  "z-ai/glm-4.5-air:free",
+  "google/gemma-4-26b-a4b-it:free",
+  "tencent/hy3-preview:free",
+  "meta-llama/llama-3.2-3b-instruct:free",
+  "liquid/lfm-2.5-1.2b-instruct:free",
+  "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+];
+
+const ENGINEER_MODELS = [
+  "qwen/qwen3-coder:free",
+  "qwen/qwen3-next-80b-a3b-instruct:free",
+  "google/gemma-4-26b-a4b-it:free",
+  "nousresearch/hermes-3-llama-3.1-405b:free",
+  "z-ai/glm-4.5-air:free",
+  "inclusionai/ling-2.6-flash:free",
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "google/gemma-4-31b-it:free",
+  "tencent/hy3-preview:free",
+  "meta-llama/llama-3.2-3b-instruct:free",
+  "liquid/lfm-2.5-1.2b-instruct:free",
+];
+
+const STRATEGIST_MODELS = [
+  "google/gemma-4-31b-it:free",
+  "inclusionai/ling-2.6-1t:free",
+  "nousresearch/hermes-3-llama-3.1-405b:free",
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "qwen/qwen3-next-80b-a3b-instruct:free",
+  "z-ai/glm-4.5-air:free",
+  "google/gemma-4-26b-a4b-it:free",
+  "tencent/hy3-preview:free",
+  "meta-llama/llama-3.2-3b-instruct:free",
+  "liquid/lfm-2.5-1.2b-instruct:free",
+  "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+];
+
+const SYNTHESIS_MODELS = [
   "nousresearch/hermes-3-llama-3.1-405b:free",
   "qwen/qwen3-next-80b-a3b-instruct:free",
   "meta-llama/llama-3.3-70b-instruct:free",
   "google/gemma-4-31b-it:free",
-  "google/gemma-4-26b-a4b-it:free",
   "z-ai/glm-4.5-air:free",
   "inclusionai/ling-2.6-1t:free",
   "tencent/hy3-preview:free",
   "meta-llama/llama-3.2-3b-instruct:free",
+  "liquid/lfm-2.5-1.2b-instruct:free",
   "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
-];
-
-const CODER_MODELS = [
-  "qwen/qwen3-coder:free",
-  "qwen/qwen3-next-80b-a3b-instruct:free",
-  "nousresearch/hermes-3-llama-3.1-405b:free",
-  "meta-llama/llama-3.3-70b-instruct:free",
-  "tencent/hy3-preview:free",
 ];
 
 async function sleep(ms: number) {
   return new Promise(r => setTimeout(r, ms));
 }
 
-async function callModel(systemPrompt: string, userPrompt: string): Promise<string> {
-  for (const model of FALLBACK_MODELS) {
+/* ─── Stream one agent — returns full accumulated content ─── */
+async function runAgent(
+  models: string[],
+  systemPrompt: string,
+  userTask: string,
+  onChunk: (text: string) => void
+): Promise<string> {
+  let content = "";
+  for (const model of models) {
     try {
-      const res = await openrouter.chat.completions.create({
+      const stream = await openrouter.chat.completions.create({
         model,
-        max_tokens: 8192,
+        max_tokens: 6000,
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
+          { role: "user", content: userTask },
         ],
+        stream: true,
       });
-      const c = res.choices[0]?.message?.content || "";
-      if (c) return c;
+      for await (const chunk of stream) {
+        const c = chunk.choices[0]?.delta?.content;
+        if (c) { content += c; onChunk(c); }
+      }
+      if (content.trim().length > 30) return content;
+      content = "";          // too short — retry next model
     } catch {
-      await sleep(400);
-      continue;
+      await sleep(600);
     }
   }
-  return "";
+  return content || "Yanıt üretilemedi.";
 }
 
 const router: IRouter = Router();
 
 router.post("/search", async (req, res) => {
-  const body = AgentWebSearchBody.parse(req.body);
-  const { query, maxResults = 5 } = body;
-
+  const { query, maxResults = 5 } = req.body as { query: string; maxResults?: number };
   try {
-    const content = await callModel(
-      `Sen bir araştırma uzmanısın. Türkçe yanıt ver. Sadece JSON döndür (başka hiçbir metin yok):
+    const content = await runAgent(
+      RESEARCHER_MODELS,
+      `Sen bir araştırma uzmanısın. Sadece JSON döndür (başka hiçbir metin yok):
 {"results":[{"title":"başlık","url":"https://ornek.com","snippet":"açıklama"}],"summary":"özet"}`,
-      `"${query}" hakkında ${maxResults} arama sonucu üret`
+      `"${query}" hakkında ${maxResults} arama sonucu üret`,
+      () => {}
     );
-
     try {
       const m = content.match(/\{[\s\S]*\}/);
       res.json(m ? JSON.parse(m[0]) : { results: [], summary: content });
@@ -75,7 +120,6 @@ router.post("/search", async (req, res) => {
 });
 
 router.post("/multi-task", async (req, res) => {
-  // Accept task from body directly; conversationId optional (may be string for local sessions)
   const task: string = (req.body as any)?.task;
   const rawId = (req.body as any)?.conversationId;
   const conversationId: number | null = typeof rawId === "number" ? rawId : null;
@@ -85,159 +129,131 @@ router.post("/multi-task", async (req, res) => {
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
-  const send = (data: object) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+  const send = (data: object) => {
+    try { res.write(`data: ${JSON.stringify(data)}\n\n`); } catch {}
+  };
 
-  const agents = [
-    {
-      name: "researcher",
-      label: "Araştırmacı",
-      models: FALLBACK_MODELS,
-      system: `Sen bir araştırma uzmanısın. Görev hakkında kapsamlı araştırma ve detaylı bilgi sunarsın. 
-Sadece araştırma ve analiz perspektifinden yaklaş. Kaynak ve referanslara dikkat et. Türkçe yaz.
-Cevabını "ARAŞTIRMA BULGULARI:" başlığıyla başlat.`,
-    },
-    {
-      name: "coder",
-      label: "Mühendis",
-      models: CODER_MODELS,
-      system: `Sen bir yazılım mühendisisin. Görev için teknik implementasyon ve kod çözümleri üretirsin.
-Sadece teknik açıdan yaklaş: mimariler, algoritmalar, kod örnekleri. Türkçe açıklamalarla markdown kullan.
-Cevabını "TEKNİK ANALİZ:" başlığıyla başlat.
+  /* ── Agent definitions ── */
+  const RESEARCHER_SYSTEM = `Sen Omega AI Araştırmacı Ajanısın. Türkçe yazarsın.
+Görevin: Verilen konu hakkında kapsamlı araştırma ve analiz yap. Güncel bilgiler, farklı perspektifler, tarihsel bağlam sun.
 
-UYGULAMA GELİŞTİRME: Eğer kullanıcı çalışan bir web uygulaması, oyun, araç, hesap makinesi veya arayüz istiyorsa:
-Eksiksiz, sıfırdan çalışan tek dosya HTML kodu (CSS ve JavaScript gömülü) yaz ve şu blok içine koy:
-[BUILD_APP]
-<!DOCTYPE html>
-<html>... tam çalışır kod ...</html>
-[/BUILD_APP]
-Güzel, modern, koyu tema tercih et. Tüm fonksiyonlar çalışmalı.`,
-    },
-    {
-      name: "designer",
-      label: "Stratejist",
-      models: FALLBACK_MODELS,
-      system: `Sen bir ürün stratejisti ve UX uzmanısın. Görev için kullanıcı deneyimi, iş değeri ve tasarım perspektifi sunarsın.
-Araştırma ve teknik bulgulara eleştirel bir gözle bak, eksikleri tamamla, stratejik öneriler sun. Türkçe yaz.
-Cevabını "STRATEJİK YORUM:" başlığıyla başlat.`,
-    },
-  ];
+ÖZEL YETENEKLERİN:
+- Kullanıcı görsel istiyorsa: [GENERATE_IMAGE: detaylı ingilizce prompt] yaz
+- Video istiyorsa: [GENERATE_VIDEO: ingilizce video açıklaması] yaz
+- Grafik/chart istiyorsa mühendise belirt
 
+Cevabını "## 🔬 ARAŞTIRMA BULGULARI" başlığıyla başlat. Markdown kullan.`;
+
+  const ENGINEER_SYSTEM = `Sen Omega AI Mühendis Ajanısın. Türkçe yazarsın.
+Görevin: Teknik implementasyon, kod ve uygulamalar üret.
+
+ÖZEL YETENEKLERİN — BUNLARI AKTİF KULLAN:
+1. WEB UYGULAMASI/OYUN/ARAÇ: Eksiksiz tek dosya HTML (CSS+JS gömülü) şu blok içine:
+   [BUILD_APP]
+   <!DOCTYPE html>
+   <html lang="tr">
+   ... tam çalışır kod (modern koyu tema, animasyonlar, interaktif) ...
+   </html>
+   [/BUILD_APP]
+
+2. GRAFİK/CHART: Chart.js CDN kullanan interaktif grafik HTML'i de BUILD_APP ile ver.
+   Örnek CDN: <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+3. ANİMASYONLU ARAYÜZ: Three.js, GSAP, CSS animations kullanabilirsin.
+   Three.js CDN: <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+4. GÖRSEL ÜRETME: [GENERATE_IMAGE: ingilizce prompt] ile illüstrasyon/diyagram iste.
+
+5. TAM WEB SİTESİ: Tam sayfalı responsive HTML/CSS site üret.
+
+Cevabını "## ⚙️ TEKNİK ÇÖZÜM" başlığıyla başlat. Build edilen uygulama varsa BUILD_APP sonraya ekle.`;
+
+  const STRATEGIST_SYSTEM = `Sen Omega AI Stratejist Ajanısın. Türkçe yazarsın.
+Görevin: UX, ürün stratejisi ve iş değeri perspektifinden yorum yap. Araştırma ve teknik çözümleri eleştirel gözle değerlendir.
+
+ÖZEL YETENEKLERİN:
+- Görsel konsept için: [GENERATE_IMAGE: ingilizce tasarım konsepti] yaz
+- Animasyonlu demo için mühendise öneri ver
+
+Cevabını "## 🎯 STRATEJİK YORUM" başlığıyla başlat. Markdown kullan.`;
+
+  /* ── Run all 3 agents IN PARALLEL ── */
   const agentOutputs: Record<string, string> = {};
 
-  // Aşama 1: Her ajan kendi uzmanlık alanından çalışır
-  for (const agent of agents) {
-    send({ agent: agent.name, label: agent.label, status: "running" });
+  const agentDefs = [
+    { name: "researcher", label: "Araştırmacı",  models: RESEARCHER_MODELS, system: RESEARCHER_SYSTEM },
+    { name: "coder",      label: "Mühendis",     models: ENGINEER_MODELS,   system: ENGINEER_SYSTEM   },
+    { name: "designer",   label: "Stratejist",   models: STRATEGIST_MODELS, system: STRATEGIST_SYSTEM  },
+  ];
 
-    let agentContent = "";
-    let streamed = false;
-    for (const model of agent.models) {
-      try {
-        const stream = await openrouter.chat.completions.create({
-          model,
-          max_tokens: 3000,
-          messages: [
-            { role: "system", content: agent.system },
-            { role: "user", content: task },
-          ],
-          stream: true,
-        });
-
-        for await (const chunk of stream) {
-          const c = chunk.choices[0]?.delta?.content;
-          if (c) {
-            agentContent += c;
-            send({ agent: agent.name, label: agent.label, content: c, status: "streaming" });
-          }
-        }
-
-        if (agentContent) {
-          streamed = true;
-          break;
-        }
-      } catch {
-        await sleep(400);
-        continue;
-      }
-    }
-
-    if (!streamed) {
-      agentContent = "Bu ajan şu an yanıt veremiyor.";
-      send({ agent: agent.name, label: agent.label, content: agentContent, status: "streaming" });
-    }
-
-    agentOutputs[agent.name] = agentContent;
-    send({ agent: agent.name, label: agent.label, status: "done" });
+  // Signal all agents are starting
+  for (const ag of agentDefs) {
+    send({ agent: ag.name, label: ag.label, status: "running" });
   }
 
-  // Aşama 2: Sentez — tüm ajanların görüşlerini birleştir
+  await Promise.all(agentDefs.map(async (ag) => {
+    const content = await runAgent(
+      ag.models,
+      ag.system,
+      task,
+      (chunk) => send({ agent: ag.name, label: ag.label, content: chunk, status: "streaming" })
+    );
+    agentOutputs[ag.name] = content;
+    send({ agent: ag.name, label: ag.label, status: "done" });
+  }));
+
+  /* ── Synthesis — combine all outputs ── */
   send({ agent: "synthesis", label: "Sentez", status: "running" });
 
-  const synthesisSystem = `Sen bir baş koordinatör yapay zekasın. Sana üç farklı uzmanın (araştırmacı, mühendis, stratejist) aynı göreve ilişkin görüşleri verildi.
-Görevin:
-1. Üç perspektifi eleştirel gözle değerlendir — hangi noktalarda hemfikirler, nerede çelişiyorlar?
-2. Çelişkileri çözüme kavuştur ve en doğru/kullanışlı yaklaşımı seç.
-3. Tüm görüşleri sentezleyerek KULLANICIYA YÖNELİK tek, tutarlı, kapsamlı bir cevap üret.
-4. Cevabın doğrudan kullanışlı olsun — "şu ajan şunu söyledi" diye atıfta bulunma.
-5. Türkçe, akıcı, profesyonel yaz. Markdown kullan.
-6. KRİTİK: Eğer mühendis bir [BUILD_APP] ... [/BUILD_APP] kodu ürettiyse, bu bloğu aynen koru ve sentez cevabının SONUNA ekle. Kodu değiştirme, kısaltma veya özet geçme.`;
+  // Extract any BUILD_APP from engineer output to preserve in synthesis
+  const buildAppMatch = agentOutputs["coder"]?.match(/\[BUILD_APP\]([\s\S]*?)\[\/BUILD_APP\]/i);
+  const buildAppBlock = buildAppMatch ? buildAppMatch[0] : "";
+  const coderWithoutApp = buildAppMatch
+    ? agentOutputs["coder"]?.replace(buildAppMatch[0], "[Uygulama kodu ayrıca eklenmiştir]")
+    : agentOutputs["coder"];
 
-  const synthesisPrompt = `**GÖREV:** ${task}
+  const synthesisSystem = `Sen Omega AI Baş Koordinatörüsün. Üç uzman ajanın (araştırmacı, mühendis, stratejist) çıktılarını tek, tutarlı, eksiksiz bir yanıtta birleştirirsin.
 
----
+Kurallar:
+1. Üç perspektifi bütünleştir — çelişkileri çöz, hemfikir olunan noktaları vurgula.
+2. KULLANICIYA DOĞRUDAN hitap et, "şu ajan şunu söyledi" gibi atıflardan kaçın.
+3. Türkçe, akıcı, profesyonel. Markdown kullan.
+4. [GENERATE_IMAGE:] veya [GENERATE_VIDEO:] marker'larını araştırmacı/stratejistten miras al.
+5. KRİTİK: Eğer mühendis bir [BUILD_APP] bloğu ürettiyse, sentez yanıtının SONUNA ekle.
+6. Eğer kullanıcı görsel istiyorsa sen de [GENERATE_IMAGE: prompt] ekle.`;
 
-**ARAŞTIRMACI GÖRÜŞܦ**
+  const synthesisPrompt = `GÖREV: ${task}
+
+ARAŞTIRMACI:
 ${agentOutputs["researcher"] || "Yanıt alınamadı."}
 
----
+MÜHENDİS:
+${coderWithoutApp || "Yanıt alınamadı."}
 
-**MÜHENDİS GÖRÜŞܦ**
-${agentOutputs["coder"] || "Yanıt alınamadı."}
-
----
-
-**STRATEJİST GÖRÜŞܦ**
+STRATEJİST:
 ${agentOutputs["designer"] || "Yanıt alınamadı."}
 
 ---
-
-Şimdi bu üç görüşü sentezleyerek kullanıcıya yönelik tek, tutarlı ve eksiksiz bir cevap üret:`;
+Şimdi bu üç görüşü sentezle ve kullanıcıya yönelik kapsamlı, doğrudan kullanışlı bir yanıt üret:`;
 
   let synthesisContent = "";
-  let synthStreamed = false;
-
-  for (const model of FALLBACK_MODELS) {
-    try {
-      const stream = await openrouter.chat.completions.create({
-        model,
-        max_tokens: 6000,
-        messages: [
-          { role: "system", content: synthesisSystem },
-          { role: "user", content: synthesisPrompt },
-        ],
-        stream: true,
-      });
-
-      for await (const chunk of stream) {
-        const c = chunk.choices[0]?.delta?.content;
-        if (c) {
-          synthesisContent += c;
-          send({ agent: "synthesis", label: "Sentez", content: c, status: "streaming" });
-        }
-      }
-
-      if (synthesisContent) {
-        synthStreamed = true;
-        break;
-      }
-    } catch {
-      await sleep(400);
-      continue;
-    }
-  }
-
-  if (!synthStreamed) {
+  try {
+    synthesisContent = await runAgent(
+      SYNTHESIS_MODELS,
+      synthesisSystem,
+      synthesisPrompt,
+      (chunk) => send({ agent: "synthesis", label: "Sentez", content: chunk, status: "streaming" })
+    );
+  } catch {
     synthesisContent = Object.values(agentOutputs).join("\n\n---\n\n");
     send({ agent: "synthesis", label: "Sentez", content: synthesisContent, status: "streaming" });
+  }
+
+  // Append BUILD_APP block after synthesis text if engineer produced one
+  if (buildAppBlock) {
+    const sep = "\n\n" + buildAppBlock;
+    send({ agent: "synthesis", label: "Sentez", content: sep, status: "streaming" });
+    synthesisContent += sep;
   }
 
   send({ agent: "synthesis", label: "Sentez", status: "done" });

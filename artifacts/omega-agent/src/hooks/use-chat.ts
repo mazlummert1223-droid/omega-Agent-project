@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { LocalDB, type LocalConversation, type LocalMessage } from "@/lib/local-db";
+import { AppsDB } from "@/lib/apps-db";
 
 export type AgentMode = 'auto' | 'researcher' | 'coder' | 'multi' | 'quantum';
 
@@ -225,11 +226,18 @@ export function useChatStream(conversationId: string | null) {
           } catch {}
         }
 
-        // Store video and app markers as separate messages
+        // Store video markers as separate messages
         for (const prompt of videoPrompts) {
           LocalDB.addMessage(conversationId, 'assistant', `__VIDEO__:${prompt}`);
         }
+        // Store apps — save to AppsDB AND show in chat
         for (const code of appCodes) {
+          // Derive app name from the last user message
+          const lastUserMsg = LocalDB.getMessages(conversationId)
+            .filter(m => m.role === 'user')
+            .slice(-2)[0]?.content ?? 'Uygulama';
+          const appName = lastUserMsg.slice(0, 60).replace(/\n/g, ' ').trim() || 'Omega App';
+          AppsDB.save(appName, code);
           LocalDB.addMessage(conversationId, 'assistant', `__APP__:${code}`);
         }
 

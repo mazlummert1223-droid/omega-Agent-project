@@ -10,6 +10,7 @@ import ModelsPage from "@/pages/Models";
 import KnowledgePage from "@/pages/Knowledge";
 import ToolsPage from "@/pages/Tools";
 import SettingsPage from "@/pages/Settings";
+import MyApps from "@/pages/MyApps";
 import { SecurityGuard } from "@/components/SecurityGuard";
 import { AuthScreen } from "@/pages/AuthScreen";
 import { getUser } from "@/lib/auth";
@@ -66,9 +67,34 @@ function Router() {
         <Route path="/knowledge" component={KnowledgePage} />
         <Route path="/tools" component={ToolsPage} />
         <Route path="/settings" component={SettingsPage} />
+        <Route path="/apps" component={MyApps} />
         <Route component={NotFound} />
       </Switch>
     </MainLayout>
+  );
+}
+
+/* ── SVG filter: converts luminance to alpha (removes dark backgrounds) ── */
+function OmegaLogoFilter() {
+  return (
+    <svg style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }} aria-hidden="true">
+      <defs>
+        <filter id="omega-logo-filter" colorInterpolationFilters="sRGB">
+          {/* Boost brightness so Ω glow becomes near-white */}
+          <feComponentTransfer>
+            <feFuncR type="linear" slope="2.0" />
+            <feFuncG type="linear" slope="1.8" />
+            <feFuncB type="linear" slope="1.4" />
+          </feComponentTransfer>
+          {/* Set alpha = luminance → dark pixels become transparent */}
+          <feColorMatrix type="matrix"
+            values="1 0 0 0 0
+                    0 1 0 0 0
+                    0 0 1 0 0
+                    0.299 0.587 0.114 0 0" />
+        </filter>
+      </defs>
+    </svg>
   );
 }
 
@@ -93,6 +119,7 @@ export default function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <OmegaLogoFilter />
       <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
         <SecurityGuard>
           <Router />

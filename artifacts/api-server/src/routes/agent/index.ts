@@ -2,6 +2,8 @@ import { Router, type IRouter } from "express";
 import { openrouter } from "@workspace/integrations-openrouter-ai";
 import { db } from "@workspace/db";
 import { messages } from "@workspace/db";
+import { getBestModels } from "../../lib/ai-models";
+import { getLiveWebContext } from "../../lib/live-web";
 
 /* ─── Model lists — each agent starts with DIFFERENT primary models
    to avoid rate-limit collisions when running in parallel ─── */
@@ -102,7 +104,7 @@ router.post("/search", async (req, res) => {
   const { query, maxResults = 5 } = req.body as { query: string; maxResults?: number };
   try {
     const content = await runAgent(
-      RESEARCHER_MODELS,
+      await getBestModels("researcher"),
       `Sen bir araştırma uzmanısın. Sadece JSON döndür (başka hiçbir metin yok):
 {"results":[{"title":"başlık","url":"https://ornek.com","snippet":"açıklama"}],"summary":"özet"}`,
       `"${query}" hakkında ${maxResults} arama sonucu üret`,
@@ -132,6 +134,9 @@ router.post("/multi-task", async (req, res) => {
   const send = (data: object) => {
     try { res.write(`data: ${JSON.stringify(data)}\n\n`); } catch {}
   };
+  send({ agent: "web", label: "Canlı İnternet", status: "running" });
+  const webContext = await getLiveWebContext(task);
+  send({ agent: "web", label: "Canlı İnternet", status: "done" });
 
   /* ── Agent definitions ── */
   const RESEARCHER_SYSTEM = `Sen Omega AI Araştırmacı Ajanısın. Türkçe yazarsın.
@@ -181,9 +186,9 @@ Cevabını "## 🎯 STRATEJİK YORUM" başlığıyla başlat. Markdown kullan.`;
   const agentOutputs: Record<string, string> = {};
 
   const agentDefs = [
-    { name: "researcher", label: "Araştırmacı",  models: RESEARCHER_MODELS, system: RESEARCHER_SYSTEM },
-    { name: "coder",      label: "Mühendis",     models: ENGINEER_MODELS,   system: ENGINEER_SYSTEM   },
-    { name: "designer",   label: "Stratejist",   models: STRATEGIST_MODELS, system: STRATEGIST_SYSTEM  },
+    { name: "researcher", label: "Araştırmacı", role: "researcher", system: RESEARCHER_SYSTEM },
+    { name: "coder",      label: "Mühendis",    role: "coder",      system: ENGINEER_SYSTEM   },
+    { name: "designer",   label: "Stratejist",  role: "creative",   system: STRATEGIST_SYSTEM  },
   ];
 
   // Signal all agents are starting
@@ -193,9 +198,9 @@ Cevabını "## 🎯 STRATEJİK YORUM" başlığıyla başlat. Markdown kullan.`;
 
   await Promise.all(agentDefs.map(async (ag) => {
     const content = await runAgent(
-      ag.models,
+      await getBestModels(ag.role),
       ag.system,
-      task,
+      `${task}\n\n${webContext}`,
       (chunk) => send({ agent: ag.name, label: ag.label, content: chunk, status: "streaming" })
     );
     agentOutputs[ag.name] = content;
@@ -239,9 +244,9 @@ ${agentOutputs["designer"] || "Yanıt alınamadı."}
   let synthesisContent = "";
   try {
     synthesisContent = await runAgent(
-      SYNTHESIS_MODELS,
+      await getBestModels("synthesis"),
       synthesisSystem,
-      synthesisPrompt,
+      `${synthesisPrompt}\n\n${webContext}`,
       (chunk) => send({ agent: "synthesis", label: "Sentez", content: chunk, status: "streaming" })
     );
   } catch {

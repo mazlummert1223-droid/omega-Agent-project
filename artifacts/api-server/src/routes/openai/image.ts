@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { openrouter } from "@workspace/integrations-openrouter-ai";
+import { getBestModels } from "../../lib/ai-models";
 
 const router: IRouter = Router();
 
@@ -65,14 +66,6 @@ const STYLE_CONFIG: Record<string, {
   },
 };
 
-const ENHANCE_MODELS = [
-  "meta-llama/llama-3.3-70b-instruct:free",
-  "nousresearch/hermes-3-llama-3.1-405b:free",
-  "google/gemma-4-31b-it:free",
-  "z-ai/glm-4.5-air:free",
-  "meta-llama/llama-3.2-3b-instruct:free",
-];
-
 const ENHANCE_SYSTEM = `You are an expert AI image prompt engineer for FLUX Pro and DALL-E 3.
 Your task: take the user's description and return a SINGLE rich, detailed English image generation prompt.
 Rules:
@@ -101,10 +94,11 @@ async function enhancePromptParallel(rawPrompt: string, styleHint: string): Prom
     return text;
   };
 
-  // Race all models with a shared 9-second timeout
+  // Race the currently available strongest models with a shared timeout.
+  const enhanceModels = await getBestModels("creative");
   try {
     const result = await Promise.any(
-      ENHANCE_MODELS.map(m => tryModel(m))
+      enhanceModels.map(m => tryModel(m))
     );
     return result;
   } catch {

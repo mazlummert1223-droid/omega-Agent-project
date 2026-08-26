@@ -1,0 +1,1 @@
+- [OpenRouter model fallback](openrouter-model-fallback.md) — model kataloğu erişilemese bile canlı ücretsiz yönlendirme ile sohbeti ayakta tut.

@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { createRequire } from "node:module";
 import { openrouter } from "@workspace/integrations-openrouter-ai";
+import { getBestModels } from "../lib/ai-models";
 
 // CJS packages that don't bundle cleanly in ESM — loaded via createRequire
 const _require = createRequire(import.meta.url);
@@ -70,10 +71,7 @@ async function analyzeImageWithAI(buffer: Buffer, mimeType: string, filename: st
   const base64 = buffer.toString("base64");
   const dataUrl = `data:${mimeType};base64,${base64}`;
 
-  const VISION_MODELS = [
-    "meta-llama/llama-3.2-11b-vision-instruct:free",
-    "google/gemma-3-27b-it:free",
-  ];
+  const VISION_MODELS = await getBestModels("vision");
 
   for (const model of VISION_MODELS) {
     try {

@@ -5,8 +5,8 @@ const MODELS = [
   {
     id: 'multi',
     name: 'OMEGA AGENT',
-    desc: 'Our most advanced model. Best for complex tasks.',
-    tags: ['Most capable', 'Best overall'],
+    desc: 'Araştırma, mühendislik ve strateji ajanlarını paralel çalıştırır; canlı internet ve otomatik sentez kullanır.',
+    tags: ['En güçlü', 'Canlı web'],
     icon: Layers,
     tagColor: '#F0972E',
     recommended: true,
@@ -14,8 +14,8 @@ const MODELS = [
   {
     id: 'quantum',
     name: 'OMEGA QUANTUM',
-    desc: 'Fast and efficient for everyday tasks.',
-    tags: ['Fast', 'Efficient'],
+    desc: 'Güncel güçlü modeller arasında otomatik yönlendirme ile derin analiz ve akıl yürütme.',
+    tags: ['Akıl yürütme', 'Canlı web'],
     icon: Zap,
     tagColor: '#888',
     recommended: false,
@@ -23,8 +23,8 @@ const MODELS = [
   {
     id: 'auto',
     name: 'OMEGA ORIGIN',
-    desc: 'Great for reasoning and problem solving.',
-    tags: ['Reliable'],
+    desc: 'Her isteği güncel güçlü ücretsiz model yönlendiricisine ve canlı internet kaynaklarına bağlar.',
+    tags: ['Otomatik', 'Canlı web'],
     icon: Bot,
     tagColor: '#888',
     recommended: false,
@@ -38,7 +38,7 @@ export default function ModelsPage() {
     <div className="flex-1 overflow-y-auto px-6 py-8" style={{ background: '#0A0A0A' }}>
       <div className="max-w-2xl mx-auto">
         <h1 className="text-lg font-display font-semibold mb-1" style={{ color: '#E0E0E0' }}>Models</h1>
-        <p className="text-[13px] mb-6" style={{ color: '#555' }}>Choose the best model for your task.</p>
+        <p className="text-[13px] mb-6" style={{ color: '#555' }}>Her mod güncel güçlü modellere otomatik bağlanır ve canlı web kaynaklarını kontrol eder.</p>
 
         <div className="space-y-3">
           {MODELS.map(m => {
@@ -93,7 +93,7 @@ export default function ModelsPage() {
         </div>
 
         <p className="mt-6 text-[11px] text-center" style={{ color: '#2E2E2E' }}>
-          More models coming soon.
+          Model kataloğu erişilebildiğinde en yeni uygun modeller otomatik listeye eklenir.
         </p>
       </div>
     </div>

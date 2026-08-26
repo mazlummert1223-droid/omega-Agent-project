@@ -5,6 +5,8 @@ import { writeFile, mkdir, readFile } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
 import os from "os";
+import { getBestModels } from "../lib/ai-models";
+import { getLiveWebContext } from "../lib/live-web";
 
 const VIDEO_DIR = path.join(os.tmpdir(), "omega-videos");
 if (!existsSync(VIDEO_DIR)) {
@@ -132,17 +134,6 @@ async function buildVideoMp4(
   return jobId; // return jobId — file accessible via /api/video/file/:jobId
 }
 
-// Doğrulanmış çalışan ücretsiz modeller (Nisan 2026)
-const VIDEO_MODELS = [
-  "nousresearch/hermes-3-llama-3.1-405b:free",
-  "qwen/qwen3-next-80b-a3b-instruct:free",
-  "meta-llama/llama-3.3-70b-instruct:free",
-  "google/gemma-4-31b-it:free",
-  "z-ai/glm-4.5-air:free",
-  "tencent/hy3-preview:free",
-  "meta-llama/llama-3.2-3b-instruct:free",
-];
-
 async function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
 
 const router: IRouter = Router();
@@ -186,14 +177,16 @@ SADECE geçerli JSON döndür:
 
   let scriptContent = "";
 
-  for (const model of VIDEO_MODELS) {
+  const videoModels = await getBestModels("creative");
+  const webContext = await getLiveWebContext(prompt);
+  for (const model of videoModels) {
     try {
       const response = await openrouter.chat.completions.create({
         model,
         max_tokens: 8192,
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Bu konuda ${duration} saniyelik ${style} stil video senaryosu oluştur: "${prompt}"` },
+          { role: "user", content: `Bu konuda ${duration} saniyelik ${style} stil video senaryosu oluştur: "${prompt}"\n\n${webContext}` },
         ],
       });
       scriptContent = response.choices[0]?.message?.content || "";

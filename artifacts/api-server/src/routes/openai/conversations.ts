@@ -7,6 +7,8 @@ import {
   CreateOpenaiConversationBody,
   SendOpenaiMessageBody,
 } from "@workspace/api-zod";
+import { getBestModels } from "../../lib/ai-models";
+import { getLiveWebContext } from "../../lib/live-web";
 
 // Doğrulanmış çalışan ücretsiz OpenRouter modelleri (Nisan 2026)
 // Privacy/guardrail kısıtlamasına takılmayan modeller önceliklendirildi
@@ -183,36 +185,14 @@ router.post("/conversations/:id/messages", async (req, res) => {
     .where(eq(messages.conversationId, id))
     .orderBy(messages.createdAt);
 
-  const { modelList, systemPrompt } = getConfig(agentMode);
+  const { systemPrompt } = getConfig(agentMode);
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
-  // Araştırmacı modunda gerçek web araması yap, sonuçları LLM'e ekle
-  let webContext = "";
-  if (agentMode === "researcher") {
-    res.write(`data: ${JSON.stringify({ content: "🔍 Web araştırması yapılıyor...\n\n" })}\n\n`);
-    try {
-      const searchRes = await fetch(`http://localhost:${process.env["PORT"] || 8080}/api/search/web`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: body.content }),
-      });
-      if (searchRes.ok) {
-        const data = await searchRes.json();
-        if (Array.isArray(data.results) && data.results.length) {
-          webContext = "\n\nGÜNCEL WEB ARAMA SONUÇLARI (kullanıcının sorusuna göre):\n" +
-            data.results.slice(0, 6).map((r: any, i: number) =>
-              `${i + 1}. ${r.title}\n   ${r.snippet}\n   Kaynak: ${r.url}`
-            ).join("\n\n") +
-            "\n\nBu sonuçları kullanarak detaylı, kaynak gösteren bir yanıt ver.";
-        }
-      }
-    } catch {
-      // Web arama başarısız, sadece LLM kullan
-    }
-  }
+  res.write(`data: ${JSON.stringify({ content: "🌐 Canlı internet kaynakları kontrol ediliyor...\n\n" })}\n\n`);
+  const webContext = await getLiveWebContext(body.content);
 
   const chatMessages = [
     { role: "system" as const, content: systemPrompt + webContext },
@@ -223,7 +203,7 @@ router.post("/conversations/:id/messages", async (req, res) => {
 
   try {
     fullResponse = await callWithFallback(
-      modelList,
+      await getBestModels(agentMode === "coder" ? "coder" : agentMode === "researcher" ? "researcher" : "general"),
       chatMessages,
       (chunk) => { res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`); }
     );
@@ -253,33 +233,11 @@ router.post("/stream-stateless", async (req, res) => {
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
-  const { modelList, systemPrompt } = getConfig(agentMode);
+  const { systemPrompt } = getConfig(agentMode);
 
-  // Web search for researcher mode
-  let webContext = "";
-  if (agentMode === "researcher") {
-    const lastUser = [...messages].reverse().find(m => m.role === "user");
-    if (lastUser) {
-      res.write(`data: ${JSON.stringify({ content: "🔍 Web araştırması yapılıyor...\n\n" })}\n\n`);
-      try {
-        const searchRes = await fetch(`http://localhost:${process.env["PORT"] || 8080}/api/search/web`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: lastUser.content }),
-        });
-        if (searchRes.ok) {
-          const data = await searchRes.json();
-          if (Array.isArray(data.results) && data.results.length) {
-            webContext = "\n\nGÜNCEL WEB ARAMA SONUÇLARI:\n" +
-              data.results.slice(0, 6).map((r: any, i: number) =>
-                `${i + 1}. ${r.title}\n   ${r.snippet}\n   Kaynak: ${r.url}`
-              ).join("\n\n") +
-              "\n\nBu sonuçları kullanarak detaylı, kaynak gösteren bir yanıt ver.";
-          }
-        }
-      } catch {}
-    }
-  }
+  const lastUser = [...messages].reverse().find(m => m.role === "user");
+  res.write(`data: ${JSON.stringify({ content: "🌐 Canlı internet kaynakları kontrol ediliyor...\n\n" })}\n\n`);
+  const webContext = await getLiveWebContext(lastUser?.content || "");
 
   const chatMessages = [
     { role: "system" as const, content: systemPrompt + webContext },
@@ -287,9 +245,13 @@ router.post("/stream-stateless", async (req, res) => {
   ];
 
   try {
-    await callWithFallback(modelList, chatMessages, (chunk) => {
+    await callWithFallback(
+      await getBestModels(agentMode === "coder" ? "coder" : agentMode === "researcher" ? "researcher" : "general"),
+      chatMessages,
+      (chunk) => {
       res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);
-    });
+      },
+    );
   } catch {
     res.write(`data: ${JSON.stringify({ content: "Bağlantı hatası oluştu. Lütfen tekrar dene." })}\n\n`);
   }

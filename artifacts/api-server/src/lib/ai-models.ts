@@ -6,9 +6,13 @@ import { openrouter } from "@workspace/integrations-openrouter-ai";
  * Keeping free-only fallbacks avoids unexpectedly charging a user's account.
  */
 const CURATED_MODELS = [
-  // OpenRouter routes this to the strongest currently available free model.
-  // It is the safety net when the provider's model catalog is unavailable.
-  "openrouter/free",
+  // Newly released free endpoints, kept before the generic router when they
+  // are available in the user's OpenRouter account.
+  "z-ai/glm-5.3-flash:free",
+  "z-ai/glm-5.2:free",
+  "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "moonshotai/kimi-k2.6:free",
+  "moonshotai/kimi-k2.7-code-20260612:free",
   "openai/gpt-oss-120b:free",
   "qwen/qwen3-235b-a22b:free",
   "moonshotai/kimi-k2:free",
@@ -33,6 +37,10 @@ const VISION_FALLBACK_MODELS = [
 ];
 
 const FALLBACK_MODELS = [
+  // Keep the provider-managed free router first when the catalog endpoint is
+  // unavailable. It selects a currently live free model without guessing an
+  // obsolete model ID.
+  "openrouter/free",
   ...CURATED_MODELS,
   "liquid/lfm-2.5-1.2b-instruct:free",
   "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
@@ -65,6 +73,10 @@ function qualityScore(id: string, role: string): number {
   if (role === "researcher" && (name.includes("deepseek-r1") || name.includes("kimi"))) score += 80;
   if (role === "creative" && (name.includes("kimi") || name.includes("llama-4"))) score += 60;
 
+  if (name.includes("glm-5.3")) score += 130;
+  if (name.includes("glm-5.2")) score += 125;
+  if (name.includes("nemotron-3-ultra")) score += 120;
+  if (name.includes("kimi-k3")) score += 120;
   if (name.includes("gpt-oss-120b")) score += 115;
   if (name.includes("qwen3-235b")) score += 112;
   if (name.includes("kimi-k2")) score += 110;

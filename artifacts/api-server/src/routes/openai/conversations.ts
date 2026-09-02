@@ -9,7 +9,8 @@ import {
 } from "@workspace/api-zod";
 import { getBestModels } from "../../lib/ai-models";
 import { getLiveWebContext } from "../../lib/live-web";
-import { getModeIdentity, OMEGA_IDENTITY_PROMPT } from "../../lib/omega-identity";
+import { getModelIdentity, OMEGA_IDENTITY_PROMPT } from "../../lib/omega-identity";
+import { getSecurityBoundaryResponse, writeSecurityBoundaryStream } from "../../lib/omega-guard";
 
 // Doğrulanmış çalışan ücretsiz OpenRouter modelleri (Nisan 2026)
 // Privacy/guardrail kısıtlamasına takılmayan modeller önceliklendirildi
@@ -182,6 +183,16 @@ router.post("/conversations/:id/messages", async (req, res) => {
     }
   }
 
+  const guardedResponse = getSecurityBoundaryResponse(body.content);
+  if (guardedResponse) {
+    await db.insert(messages).values({ conversationId: id, role: "assistant", content: guardedResponse });
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    writeSecurityBoundaryStream(res, guardedResponse);
+    return;
+  }
+
   const history = await db.select().from(messages)
     .where(eq(messages.conversationId, id))
     .orderBy(messages.createdAt);
@@ -237,6 +248,11 @@ router.post("/stream-stateless", async (req, res) => {
   const { systemPrompt } = getConfig(agentMode);
 
   const lastUser = [...messages].reverse().find(m => m.role === "user");
+  const guardedResponse = lastUser?.content ? getSecurityBoundaryResponse(lastUser.content) : null;
+  if (guardedResponse) {
+    writeSecurityBoundaryStream(res, guardedResponse);
+    return;
+  }
   res.write(`data: ${JSON.stringify({ content: "🌐 Canlı internet kaynakları kontrol ediliyor...\n\n" })}\n\n`);
   const webContext = await getLiveWebContext(lastUser?.content || "");
 
@@ -292,22 +308,22 @@ Sen son derece akıllı ve yetenekli bir yapay zeka asistanısın.
     case "researcher":
       return {
         modelList: RESEARCHER_PRIORITY,
-         systemPrompt: `${base}\n${getModeIdentity("researcher")}\nARAŞTIRMACI MODUndasın: Derin ve kapsamlı araştırma yaparsın. Başlıklar, maddeler ve düzenli formatta kapsamlı bilgi sunar, farklı perspektifleri karşılaştırırsın.`,
+         systemPrompt: `${base}\n${getModelIdentity("researcher")}\nARAŞTIRMACI MODELİ olarak derin ve kapsamlı araştırma yaparsın. Başlıklar, maddeler ve düzenli formatta kapsamlı bilgi sunar, farklı perspektifleri karşılaştırırsın.`,
       };
     case "coder":
       return {
         modelList: CODER_PRIORITY,
-         systemPrompt: `${base}\n${getModeIdentity("coder")}\nKOD MÜHENDİSİ MODUndasın: Her programlama dilinde uzman kod yazarsın. Tam çalışır kod + Türkçe açıklama sunar, en iyi pratikleri kullanırsın.`,
+         systemPrompt: `${base}\n${getModelIdentity("coder")}\nKOD MÜHENDİSİ MODELİ olarak her programlama dilinde uzman kod yazarsın. Tam çalışır kod + Türkçe açıklama sunar, en iyi pratikleri kullanırsın.`,
       };
     case "quantum":
       return {
         modelList: MODEL_PRIORITY, // Full fallback list for reliability
-         systemPrompt: `${base}\n${getModeIdentity("quantum")}\nOMEGA QUANTUM MODUndasın: En gelişmiş analiz ve akıl yürütme kapasitesiyle çalışırsın. Çok katmanlı düşünür, her konuyu derin ve sistematik şekilde ele alırsın. Karmaşık sorunları adım adım çözer, alternatif yaklaşımlar sunar, ve en doğru sonuca ulaşırsın. Yanıtların diğer modellerin ötesinde detaylı ve kesin olur.`,
+         systemPrompt: `${base}\n${getModelIdentity("quantum")}\nOMEGA QUANTUM MODELİ olarak en gelişmiş analiz ve akıl yürütme kapasitesiyle çalışırsın. Çok katmanlı düşünür, her konuyu derin ve sistematik şekilde ele alırsın. Karmaşık sorunları adım adım çözer, alternatif yaklaşımlar sunar, ve en doğru sonuca ulaşırsın. Yanıtların diğer modellerin ötesinde detaylı ve kesin olur.`,
       };
     case "multi":
       return {
         modelList: MODEL_PRIORITY,
-         systemPrompt: `${base}\n${getModeIdentity("multi")}\nOMEGA AGENT MODUndasın: Karmaşık görevleri hem araştırma (## Araştırma) hem kod (## Kod) hem strateji (## Strateji) açısından bölümler halinde çözersin.`,
+         systemPrompt: `${base}\n${getModelIdentity("multi")}\nOMEGA AGENT MODELİ olarak karmaşık görevleri hem araştırma (## Araştırma) hem kod (## Kod) hem strateji (## Strateji) açısından bölümler halinde çözersin.`,
       };
     case "video":
       return {
@@ -317,7 +333,7 @@ Sen son derece akıllı ve yetenekli bir yapay zeka asistanısın.
     default:
       return {
         modelList: MODEL_PRIORITY,
-         systemPrompt: `${base}\n${getModeIdentity("origin")}\nOMEGA ORİGİNS MODUndasın: Her türlü konuda yardımcı olursun — araştırma, kod, yaratıcı yazı, analiz, matematik, tarih, bilim, sanat, tasarım.`,
+         systemPrompt: `${base}\n${getModelIdentity("origin")}\nOMEGA ORIGIN MODELİ olarak her türlü konuda yardımcı olursun — araştırma, kod, yaratıcı yazı, analiz, matematik, tarih, bilim, sanat, tasarım.`,
       };
   }
 }

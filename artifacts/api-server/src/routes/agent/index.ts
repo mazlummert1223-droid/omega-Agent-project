@@ -4,7 +4,8 @@ import { db } from "@workspace/db";
 import { messages } from "@workspace/db";
 import { getBestModels } from "../../lib/ai-models";
 import { getLiveWebContext } from "../../lib/live-web";
-import { OMEGA_IDENTITY_PROMPT, getModeIdentity } from "../../lib/omega-identity";
+import { OMEGA_IDENTITY_PROMPT, getModelIdentity } from "../../lib/omega-identity";
+import { getSecurityBoundaryResponse, writeSecurityBoundaryStream } from "../../lib/omega-guard";
 
 /* ─── Model lists — each agent starts with DIFFERENT primary models
    to avoid rate-limit collisions when running in parallel ─── */
@@ -167,6 +168,12 @@ router.post("/multi-task", async (req, res) => {
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
+  const guardedResponse = getSecurityBoundaryResponse(task);
+  if (guardedResponse) {
+    writeSecurityBoundaryStream(res, guardedResponse);
+    return;
+  }
+
   const send = (data: object) => {
     try { res.write(`data: ${JSON.stringify(data)}\n\n`); } catch {}
   };
@@ -178,7 +185,7 @@ router.post("/multi-task", async (req, res) => {
 
   /* ── Agent definitions ── */
   const RESEARCHER_SYSTEM = `${OMEGA_IDENTITY_PROMPT}
-${getModeIdentity("agent")}
+ ${getModelIdentity("agent")}
 Sen Omega AI Araştırmacı Ajanısın. Türkçe yazarsın.
 Görevin: Verilen konu hakkında kapsamlı araştırma ve analiz yap. Güncel bilgiler, farklı perspektifler, tarihsel bağlam sun.
 
@@ -190,7 +197,7 @@ Görevin: Verilen konu hakkında kapsamlı araştırma ve analiz yap. Güncel bi
 Cevabını "## 🔬 ARAŞTIRMA BULGULARI" başlığıyla başlat. Markdown kullan.`;
 
   const ENGINEER_SYSTEM = `${OMEGA_IDENTITY_PROMPT}
-${getModeIdentity("agent")}
+ ${getModelIdentity("agent")}
 Sen Omega AI Mühendis Ajanısın. Türkçe yazarsın.
 Görevin: Teknik implementasyon, kod ve uygulamalar üret.
 
@@ -220,7 +227,7 @@ Görevin: Teknik implementasyon, kod ve uygulamalar üret.
 Cevabını "## ⚙️ TEKNİK ÇÖZÜM" başlığıyla başlat. Build edilen uygulama varsa BUILD_APP sonraya ekle.`;
 
   const STRATEGIST_SYSTEM = `${OMEGA_IDENTITY_PROMPT}
-${getModeIdentity("agent")}
+ ${getModelIdentity("agent")}
 Sen Omega AI Stratejist Ajanısın. Türkçe yazarsın.
 Görevin: UX, ürün stratejisi ve iş değeri perspektifinden yorum yap. Araştırma ve teknik çözümleri eleştirel gözle değerlendir.
 
@@ -266,7 +273,7 @@ Cevabını "## 🎯 STRATEJİK YORUM" başlığıyla başlat. Markdown kullan.`;
     : agentOutputs["coder"];
 
   const synthesisSystem = `${OMEGA_IDENTITY_PROMPT}
-${getModeIdentity("agent")}
+ ${getModelIdentity("agent")}
 Sen Omega AI Baş Koordinatörüsün. Üç uzman ajanın (araştırmacı, mühendis, stratejist) çıktılarını tek, tutarlı, eksiksiz bir yanıtta birleştirirsin.
 
 Kurallar:

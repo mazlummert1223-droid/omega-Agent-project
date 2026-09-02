@@ -251,7 +251,7 @@ Kullanıcı sorusu: ${text}`;
 
       {showMore && (
         <Popup right>
-          <p className="text-[10px] font-semibold uppercase tracking-widest px-4 pt-3 pb-2" style={{ color: '#555' }}>Hızlı mod</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest px-4 pt-3 pb-2" style={{ color: '#555' }}>Hızlı model</p>
           {[
             { id: 'multi' as AgentMode, label: 'Çok ajanlı görev' },
             { id: 'quantum' as AgentMode, label: 'Derin analiz' },

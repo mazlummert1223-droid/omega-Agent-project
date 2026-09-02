@@ -5,7 +5,7 @@ const MODELS = [
   {
     id: 'multi',
     name: 'OMEGA AGENT',
-    title: 'Koordinatör',
+    title: 'Koordinatör Modeli',
     role: 'Araştırma, mühendislik ve stratejiyi birleştirir.',
     desc: 'Araştırma, mühendislik ve strateji ajanlarını paralel çalıştırır; canlı internet ve otomatik sentez kullanır.',
     tags: ['En güçlü', 'Canlı web'],
@@ -16,7 +16,7 @@ const MODELS = [
   {
     id: 'quantum',
     name: 'OMEGA QUANTUM',
-    title: 'Derin Akıl',
+    title: 'Derin Akıl Modeli',
     role: 'Karmaşık problemleri adım adım çözer.',
     desc: 'Güncel güçlü modeller arasında otomatik yönlendirme ile derin analiz ve akıl yürütme.',
     tags: ['Akıl yürütme', 'Canlı web'],
@@ -27,7 +27,7 @@ const MODELS = [
   {
     id: 'auto',
     name: 'OMEGA ORIGIN',
-    title: 'Genel Zeka',
+    title: 'Genel Zeka Modeli',
     role: 'Dengeli günlük yardımcı ve yaratıcı ortak.',
     desc: 'Her isteği güncel güçlü ücretsiz model yönlendiricisine ve canlı internet kaynaklarına bağlar.',
     tags: ['Otomatik', 'Canlı web'],
@@ -44,7 +44,7 @@ export default function ModelsPage() {
     <div className="flex-1 overflow-y-auto px-6 py-8" style={{ background: '#0A0A0A' }}>
       <div className="max-w-2xl mx-auto">
         <h1 className="text-lg font-display font-semibold mb-1" style={{ color: '#E0E0E0' }}>Models</h1>
-        <p className="text-[13px] mb-6" style={{ color: '#555' }}>Her mod güncel güçlü modellere otomatik bağlanır ve canlı web kaynaklarını kontrol eder.</p>
+        <p className="text-[13px] mb-6" style={{ color: '#555' }}>Her model, güncel güçlü modellere otomatik bağlanır ve canlı web kaynaklarını kontrol eder.</p>
 
         <div className="space-y-3">
           {MODELS.map(m => {

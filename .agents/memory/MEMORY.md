@@ -1,2 +1,3 @@
 - [OpenRouter model fallback](openrouter-model-fallback.md) — model kataloğu erişilemese bile canlı ücretsiz yönlendirme ile sohbeti ayakta tut.
 - [Video provider fallback](video-provider-fallback.md) — LTX bakiye hatasını görünür tut, ücretsiz storyboard MP4 yolunu koru.
+- [Omega identity and project memory](omega-identity-and-memory.md) — mod kimlikleri merkezi, Agent geçmişi ilk brief ve son adımlarla taşınmalı.

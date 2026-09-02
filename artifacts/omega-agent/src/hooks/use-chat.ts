@@ -115,7 +115,7 @@ export function useChatStream(conversationId: string | null) {
 
       const url = isMulti ? '/api/agent/multi-task' : '/api/openai/stream-stateless';
       const body = isMulti
-        ? { task: content, conversationId: '__local__' }
+        ? { task: content, conversationId, history }
         : { messages: history, agentMode };
 
       const response = await fetch(url, {

@@ -4,6 +4,7 @@ import { db } from "@workspace/db";
 import { messages } from "@workspace/db";
 import { getBestModels } from "../../lib/ai-models";
 import { getLiveWebContext } from "../../lib/live-web";
+import { OMEGA_IDENTITY_PROMPT, getModeIdentity } from "../../lib/omega-identity";
 
 /* ─── Model lists — each agent starts with DIFFERENT primary models
    to avoid rate-limit collisions when running in parallel ─── */
@@ -64,6 +65,41 @@ const SYNTHESIS_MODELS = [
 
 async function sleep(ms: number) {
   return new Promise(r => setTimeout(r, ms));
+}
+
+type ConversationTurn = { role: "user" | "assistant"; content: string };
+
+function buildProjectContext(rawHistory: unknown, currentTask: string): string {
+  if (!Array.isArray(rawHistory)) return "";
+  const history = rawHistory
+    .filter((turn): turn is ConversationTurn =>
+      Boolean(turn && typeof turn === "object" &&
+        ((turn as any).role === "user" || (turn as any).role === "assistant") &&
+        typeof (turn as any).content === "string"),
+    )
+    .map(turn => ({ role: turn.role, content: turn.content.trim() }))
+    .filter(turn => turn.content);
+
+  // The client includes the current task in history. Keep the original user
+  // brief plus recent turns so multi-step projects retain their requirements
+  // without growing the prompt forever.
+  const previous = history.length && history[history.length - 1].role === "user" &&
+    history[history.length - 1].content === currentTask.trim()
+    ? history.slice(0, -1)
+    : history;
+  if (!previous.length) return "";
+
+  const firstUser = previous.find(turn => turn.role === "user");
+  const recent = previous.slice(-10);
+  const selected = firstUser && !recent.includes(firstUser) ? [firstUser, ...recent] : recent;
+  const text = selected.map(turn => {
+    const limit = turn.content.startsWith("__APP__") ? 24000 : 6000;
+    return `${turn.role === "user" ? "KULLANICI" : "OMEGA"}:\n${turn.content.slice(0, limit)}`;
+  }).join("\n\n");
+  return `ÖNCEKİ PROJE VE KONUŞMA BAĞLAMI:
+${text.slice(-50000)}
+
+Bu bağlamdaki açık gereksinimleri, kararları ve üretilen kodu koru. Kullanıcı açıkça sıfırdan başlamanı istemedikçe önceki çalışmayı silme veya yeniden başlatma.`;
 }
 
 /* ─── Stream one agent — returns full accumulated content ─── */
@@ -136,10 +172,14 @@ router.post("/multi-task", async (req, res) => {
   };
   send({ agent: "web", label: "Canlı İnternet", status: "running" });
   const webContext = await getLiveWebContext(task);
+  const projectContext = buildProjectContext((req.body as any)?.history, task);
+  const taskWithContext = `${projectContext ? `${projectContext}\n\n` : ""}AKTİF KULLANICI İSTEĞİ:\n${task}`;
   send({ agent: "web", label: "Canlı İnternet", status: "done" });
 
   /* ── Agent definitions ── */
-  const RESEARCHER_SYSTEM = `Sen Omega AI Araştırmacı Ajanısın. Türkçe yazarsın.
+  const RESEARCHER_SYSTEM = `${OMEGA_IDENTITY_PROMPT}
+${getModeIdentity("agent")}
+Sen Omega AI Araştırmacı Ajanısın. Türkçe yazarsın.
 Görevin: Verilen konu hakkında kapsamlı araştırma ve analiz yap. Güncel bilgiler, farklı perspektifler, tarihsel bağlam sun.
 
 ÖZEL YETENEKLERİN:
@@ -149,7 +189,9 @@ Görevin: Verilen konu hakkında kapsamlı araştırma ve analiz yap. Güncel bi
 
 Cevabını "## 🔬 ARAŞTIRMA BULGULARI" başlığıyla başlat. Markdown kullan.`;
 
-  const ENGINEER_SYSTEM = `Sen Omega AI Mühendis Ajanısın. Türkçe yazarsın.
+  const ENGINEER_SYSTEM = `${OMEGA_IDENTITY_PROMPT}
+${getModeIdentity("agent")}
+Sen Omega AI Mühendis Ajanısın. Türkçe yazarsın.
 Görevin: Teknik implementasyon, kod ve uygulamalar üret.
 
 ÖZEL YETENEKLERİN — BUNLARI AKTİF KULLAN:
@@ -177,7 +219,9 @@ Görevin: Teknik implementasyon, kod ve uygulamalar üret.
 
 Cevabını "## ⚙️ TEKNİK ÇÖZÜM" başlığıyla başlat. Build edilen uygulama varsa BUILD_APP sonraya ekle.`;
 
-  const STRATEGIST_SYSTEM = `Sen Omega AI Stratejist Ajanısın. Türkçe yazarsın.
+  const STRATEGIST_SYSTEM = `${OMEGA_IDENTITY_PROMPT}
+${getModeIdentity("agent")}
+Sen Omega AI Stratejist Ajanısın. Türkçe yazarsın.
 Görevin: UX, ürün stratejisi ve iş değeri perspektifinden yorum yap. Araştırma ve teknik çözümleri eleştirel gözle değerlendir.
 
 ÖZEL YETENEKLERİN:
@@ -204,7 +248,7 @@ Cevabını "## 🎯 STRATEJİK YORUM" başlığıyla başlat. Markdown kullan.`;
     const content = await runAgent(
       await getBestModels(ag.role),
       ag.system,
-      `${task}\n\n${webContext}`,
+      `${taskWithContext}\n\n${webContext}`,
       (chunk) => send({ agent: ag.name, label: ag.label, content: chunk, status: "streaming" })
     );
     agentOutputs[ag.name] = content;
@@ -221,7 +265,9 @@ Cevabını "## 🎯 STRATEJİK YORUM" başlığıyla başlat. Markdown kullan.`;
     ? agentOutputs["coder"]?.replace(buildAppMatch[0], "[Uygulama kodu ayrıca eklenmiştir]")
     : agentOutputs["coder"];
 
-  const synthesisSystem = `Sen Omega AI Baş Koordinatörüsün. Üç uzman ajanın (araştırmacı, mühendis, stratejist) çıktılarını tek, tutarlı, eksiksiz bir yanıtta birleştirirsin.
+  const synthesisSystem = `${OMEGA_IDENTITY_PROMPT}
+${getModeIdentity("agent")}
+Sen Omega AI Baş Koordinatörüsün. Üç uzman ajanın (araştırmacı, mühendis, stratejist) çıktılarını tek, tutarlı, eksiksiz bir yanıtta birleştirirsin.
 
 Kurallar:
 1. Üç perspektifi bütünleştir — çelişkileri çöz, hemfikir olunan noktaları vurgula.
@@ -231,7 +277,7 @@ Kurallar:
 5. KRİTİK: Eğer mühendis bir [BUILD_APP] bloğu ürettiyse, sentez yanıtının SONUNA ekle.
 6. Eğer kullanıcı görsel istiyorsa sen de [GENERATE_IMAGE: prompt] ekle.`;
 
-  const synthesisPrompt = `GÖREV: ${task}
+  const synthesisPrompt = `${projectContext ? `${projectContext}\n\n` : ""}GÖREV: ${task}
 
 ARAŞTIRMACI:
 ${agentOutputs["researcher"] || "Yanıt alınamadı."}

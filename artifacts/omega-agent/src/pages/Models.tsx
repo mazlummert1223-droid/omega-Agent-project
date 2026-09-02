@@ -5,6 +5,8 @@ const MODELS = [
   {
     id: 'multi',
     name: 'OMEGA AGENT',
+    title: 'Koordinatör',
+    role: 'Araştırma, mühendislik ve stratejiyi birleştirir.',
     desc: 'Araştırma, mühendislik ve strateji ajanlarını paralel çalıştırır; canlı internet ve otomatik sentez kullanır.',
     tags: ['En güçlü', 'Canlı web'],
     icon: Layers,
@@ -14,6 +16,8 @@ const MODELS = [
   {
     id: 'quantum',
     name: 'OMEGA QUANTUM',
+    title: 'Derin Akıl',
+    role: 'Karmaşık problemleri adım adım çözer.',
     desc: 'Güncel güçlü modeller arasında otomatik yönlendirme ile derin analiz ve akıl yürütme.',
     tags: ['Akıl yürütme', 'Canlı web'],
     icon: Zap,
@@ -23,6 +27,8 @@ const MODELS = [
   {
     id: 'auto',
     name: 'OMEGA ORIGIN',
+    title: 'Genel Zeka',
+    role: 'Dengeli günlük yardımcı ve yaratıcı ortak.',
     desc: 'Her isteği güncel güçlü ücretsiz model yönlendiricisine ve canlı internet kaynaklarına bağlar.',
     tags: ['Otomatik', 'Canlı web'],
     icon: Bot,
@@ -79,7 +85,8 @@ export default function ModelsPage() {
                       </span>
                     ))}
                   </div>
-                  <p className="text-[12px]" style={{ color: '#555' }}>{m.desc}</p>
+                   <p className="text-[12px] font-medium mb-0.5" style={{ color: isSelected ? '#A0A0A0' : '#666' }}>{m.title} · {m.role}</p>
+                   <p className="text-[12px]" style={{ color: '#555' }}>{m.desc}</p>
                 </div>
                 <div
                   className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0"

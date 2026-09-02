@@ -9,6 +9,7 @@ import {
 } from "@workspace/api-zod";
 import { getBestModels } from "../../lib/ai-models";
 import { getLiveWebContext } from "../../lib/live-web";
+import { getModeIdentity, OMEGA_IDENTITY_PROMPT } from "../../lib/omega-identity";
 
 // Doğrulanmış çalışan ücretsiz OpenRouter modelleri (Nisan 2026)
 // Privacy/guardrail kısıtlamasına takılmayan modeller önceliklendirildi
@@ -261,7 +262,9 @@ router.post("/stream-stateless", async (req, res) => {
 });
 
 function getConfig(agentMode: string): { modelList: string[]; systemPrompt: string } {
-  const base = `Sen Omega AI'sın - Türkçe konuşan, son derece akıllı ve yetenekli bir yapay zeka asistanısın.
+  const base = `${OMEGA_IDENTITY_PROMPT}
+
+Sen son derece akıllı ve yetenekli bir yapay zeka asistanısın.
 - Her zaman Türkçe yanıt ver
 - Kullanıcının her türlü sorusuna yardımcı ol, kısıtlama yok
 - Detaylı, kapsamlı ve yardımsever yanıtlar ver
@@ -289,32 +292,32 @@ function getConfig(agentMode: string): { modelList: string[]; systemPrompt: stri
     case "researcher":
       return {
         modelList: RESEARCHER_PRIORITY,
-        systemPrompt: `${base}\n\nARAŞTIRMACI MODUndasın: Derin ve kapsamlı araştırma yaparsın. Başlıklar, maddeler ve düzenli formatta kapsamlı bilgi sunar, farklı perspektifleri karşılaştırırsın.`,
+         systemPrompt: `${base}\n${getModeIdentity("researcher")}\nARAŞTIRMACI MODUndasın: Derin ve kapsamlı araştırma yaparsın. Başlıklar, maddeler ve düzenli formatta kapsamlı bilgi sunar, farklı perspektifleri karşılaştırırsın.`,
       };
     case "coder":
       return {
         modelList: CODER_PRIORITY,
-        systemPrompt: `${base}\n\nKOD MÜHENDİSİ MODUndasın: Her programlama dilinde uzman kod yazarsın. Tam çalışır kod + Türkçe açıklama sunar, en iyi pratikleri kullanırsın.`,
+         systemPrompt: `${base}\n${getModeIdentity("coder")}\nKOD MÜHENDİSİ MODUndasın: Her programlama dilinde uzman kod yazarsın. Tam çalışır kod + Türkçe açıklama sunar, en iyi pratikleri kullanırsın.`,
       };
     case "quantum":
       return {
         modelList: MODEL_PRIORITY, // Full fallback list for reliability
-        systemPrompt: `${base}\n\nOMEGA QUANTUM MODUndasın: En gelişmiş analiz ve akıl yürütme kapasitesiyle çalışırsın. Çok katmanlı düşünür, her konuyu derin ve sistematik şekilde ele alırsın. Karmaşık sorunları adım adım çözer, alternatif yaklaşımlar sunar, ve en doğru sonuca ulaşırsın. Yanıtların diğer modellerin ötesinde detaylı ve kesin olur.`,
+         systemPrompt: `${base}\n${getModeIdentity("quantum")}\nOMEGA QUANTUM MODUndasın: En gelişmiş analiz ve akıl yürütme kapasitesiyle çalışırsın. Çok katmanlı düşünür, her konuyu derin ve sistematik şekilde ele alırsın. Karmaşık sorunları adım adım çözer, alternatif yaklaşımlar sunar, ve en doğru sonuca ulaşırsın. Yanıtların diğer modellerin ötesinde detaylı ve kesin olur.`,
       };
     case "multi":
       return {
         modelList: MODEL_PRIORITY,
-        systemPrompt: `${base}\n\nOMEGA AGENT MODUndasın: Karmaşık görevleri hem araştırma (## Araştırma) hem kod (## Kod) hem strateji (## Strateji) açısından bölümler halinde çözersin.`,
+         systemPrompt: `${base}\n${getModeIdentity("multi")}\nOMEGA AGENT MODUndasın: Karmaşık görevleri hem araştırma (## Araştırma) hem kod (## Kod) hem strateji (## Strateji) açısından bölümler halinde çözersin.`,
       };
     case "video":
       return {
         modelList: MODEL_PRIORITY,
-        systemPrompt: `${base}\n\nVİDEO YAPIMCI MODUndasın: Detaylı video scriptleri, sahne açıklamaları ve storyboard'lar oluşturursun.`,
+         systemPrompt: `${base}\nVİDEO YAPIMCI MODUndasın: Detaylı video scriptleri, sahne açıklamaları ve storyboard'lar oluşturursun.`,
       };
     default:
       return {
         modelList: MODEL_PRIORITY,
-        systemPrompt: `${base}\n\nOMEGA ORİGİNS MODUndasın: Her türlü konuda yardımcı olursun — araştırma, kod, yaratıcı yazı, analiz, matematik, tarih, bilim, sanat, tasarım.`,
+         systemPrompt: `${base}\n${getModeIdentity("origin")}\nOMEGA ORİGİNS MODUndasın: Her türlü konuda yardımcı olursun — araştırma, kod, yaratıcı yazı, analiz, matematik, tarih, bilim, sanat, tasarım.`,
       };
   }
 }

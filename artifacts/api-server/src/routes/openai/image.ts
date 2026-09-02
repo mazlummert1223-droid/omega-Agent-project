@@ -66,18 +66,43 @@ const STYLE_CONFIG: Record<string, {
   },
 };
 
-const ENHANCE_SYSTEM = `You are an expert AI image prompt engineer for FLUX Pro and DALL-E 3.
-Your task: take the user's description and return a SINGLE rich, detailed English image generation prompt.
-Rules:
-- Output ONLY the enhanced prompt text. No quotes, no explanations, no intro text.
-- Maximum 150 words.
-- Add visual details: lighting, composition, colors, textures, mood, camera/lens info where appropriate.
-- If input is not in English, translate and enhance to English.
-- Do NOT include NSFW content.`;
+const ENHANCE_SYSTEM = `You are Omega Vision Prompt Architect, a precise image-prompt specialist for FLUX.
+Transform the user's image request into ONE rich, detailed English prompt while preserving the user's exact intent.
+Follow these rules strictly:
+- Identify and LOCK the main subject, action, quantity, setting, and requested style before writing.
+- The main subject must remain the same. Never substitute it with another animal, person, object, scene, or concept.
+- If the user gives only a short subject such as "a dragon image", expand that subject into a clear scene but keep "dragon" as the dominant subject.
+- Translate Turkish to natural English. Preserve named entities, colors, numbers, relationships, and unusual details.
+- Add only helpful visual details: composition, camera angle, lighting, palette, materials, atmosphere, depth, and quality.
+- Do not invent a different story, brand, character, or location. Do not add text, logos, or watermark unless requested.
+- Output ONLY one English prompt, with no quotes, labels, explanations, bullet points, or markdown.
+- Maximum 180 words. Do not include NSFW content.`;
+
+const FALLBACK_TRANSLATIONS: Record<string, string> = {
+  ejderha: "dragon", ejderhayı: "dragon", ejderhanın: "dragon",
+  kedi: "cat", kediyi: "cat", köpek: "dog", köpeği: "dog",
+  kadın: "woman", erkek: "man", çocuk: "child", kız: "girl",
+  şehir: "city", orman: "forest", uzay: "space", robot: "robot",
+  araba: "car", ev: "house", deniz: "sea", dağ: "mountain",
+  güneş: "sun", ay: "moon", şövalye: "knight", prenses: "princess",
+  çiçek: "flower", kuş: "bird", kurt: "wolf", aslan: "lion",
+};
+
+function fallbackEnglishPrompt(rawPrompt: string): string {
+  let translated = rawPrompt;
+  for (const [turkish, english] of Object.entries(FALLBACK_TRANSLATIONS)) {
+    translated = translated.replace(new RegExp(`\\b${turkish}\\b`, "gi"), english);
+  }
+  return `${translated}, clearly centered on the requested subject, coherent scene, detailed composition, natural lighting, rich colors, realistic textures, high quality`;
+}
 
 // Try all models in parallel, take the fastest valid response
 async function enhancePromptParallel(rawPrompt: string, styleHint: string): Promise<string> {
-  const userMsg = `User description: "${rawPrompt}"${styleHint ? ` Style: ${styleHint}.` : ""}\n\nEnhanced English image prompt:`;
+  const userMsg = `USER IMAGE REQUEST (preserve the subject exactly):
+<request>${rawPrompt}</request>
+${styleHint ? `<requested_style>${styleHint}</requested_style>` : ""}
+
+Return one enhanced English image prompt only:`;
 
   const tryModel = async (model: string): Promise<string> => {
     const resp = await openrouter.chat.completions.create({
@@ -86,24 +111,28 @@ async function enhancePromptParallel(rawPrompt: string, styleHint: string): Prom
         { role: "system", content: ENHANCE_SYSTEM },
         { role: "user", content: userMsg },
       ],
-      max_tokens: 200,
-      temperature: 0.75,
+        max_tokens: 280,
+        temperature: 0.35,
     });
     const text = resp.choices?.[0]?.message?.content?.trim() ?? "";
     if (!text || text.length < 20) throw new Error("empty");
     return text;
   };
 
-  // Race the currently available strongest models with a shared timeout.
+  // Try models in quality order. Promise.any used to accept the fastest
+  // response, which often came from a weaker model and changed the subject.
   const enhanceModels = await getBestModels("creative");
-  try {
-    const result = await Promise.any(
-      enhanceModels.map(m => tryModel(m))
-    );
-    return result;
-  } catch {
-    return rawPrompt; // All failed or timed out — use original
+  for (const model of enhanceModels.slice(0, 6)) {
+    try {
+      return await Promise.race([
+        tryModel(model),
+        new Promise<string>((_, reject) => setTimeout(() => reject(new Error("timeout")), 7000)),
+      ]);
+    } catch {
+      continue;
+    }
   }
+  return fallbackEnglishPrompt(rawPrompt);
 }
 
 router.post("/generate-image", async (req, res) => {
@@ -117,20 +146,9 @@ router.post("/generate-image", async (req, res) => {
 
   const config = STYLE_CONFIG[style] ?? STYLE_CONFIG.default;
 
-  // Run LLM enhancement with a hard timeout
-  const timeout = new Promise<string>((resolve) =>
-    setTimeout(() => resolve(prompt), 9000)
-  );
+  const enhanced = await enhancePromptParallel(prompt, style !== "default" ? style : "");
 
-  const enhanced = await Promise.race([
-    enhancePromptParallel(prompt, style !== "default" ? style : ""),
-    timeout,
-  ]);
-
-  // Append quality tags if LLM returned original (no enhancement happened)
-  const finalPrompt = enhanced === prompt
-    ? `${prompt}, ${config.qualityTags}`
-    : `${enhanced}, ${config.qualityTags}`;
+  const finalPrompt = `${enhanced}, ${config.qualityTags}`;
 
   const seed = Math.floor(Math.random() * 9999999);
   const imageUrl = [
@@ -143,7 +161,7 @@ router.post("/generate-image", async (req, res) => {
     `&private=true`,
   ].join("");
 
-  res.json({ url: imageUrl, model: config.model, style });
+  res.json({ url: imageUrl, model: config.model, style, enhancedPrompt: finalPrompt });
 });
 
 export default router;

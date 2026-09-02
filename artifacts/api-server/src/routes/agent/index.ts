@@ -153,13 +153,17 @@ Cevabını "## 🔬 ARAŞTIRMA BULGULARI" başlığıyla başlat. Markdown kulla
 Görevin: Teknik implementasyon, kod ve uygulamalar üret.
 
 ÖZEL YETENEKLERİN — BUNLARI AKTİF KULLAN:
-1. WEB UYGULAMASI/OYUN/ARAÇ: Eksiksiz tek dosya HTML (CSS+JS gömülü) şu blok içine:
+  1. WEB UYGULAMASI/OYUN/ARAÇ: Eksiksiz, kendi kendine çalışan tek dosya HTML (CSS+JS gömülü) şu blok içine:
    [BUILD_APP]
    <!DOCTYPE html>
    <html lang="tr">
-   ... tam çalışır kod (modern koyu tema, animasyonlar, interaktif) ...
+   ... tam çalışır kod (modern koyu tema, responsive düzen, erişilebilir kontroller, gerçek etkileşimler) ...
    </html>
    [/BUILD_APP]
+   Büyük projelerde bile tüm ekranları ve ana akışları tek dosyada uygula. Hiçbir buton
+   placeholder olarak kalmasın: form doğrulama, filtreler, modal/sekme geçişleri,
+   localStorage ile demo kalıcılığı ve hata/boş durumlarını ekle. Harici CDN kullanacaksan
+   uygulama CDN olmadan da açılmalı veya yüklenememe durumunu görünür şekilde ele almalı.
 
 2. GRAFİK/CHART: Chart.js CDN kullanan interaktif grafik HTML'i de BUILD_APP ile ver.
    Örnek CDN: <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

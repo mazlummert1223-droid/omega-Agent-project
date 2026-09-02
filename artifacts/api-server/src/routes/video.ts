@@ -106,7 +106,7 @@ async function buildVideoMp4(
   }
 
   if (localFiles.length === 1) {
-    filter += `[v0]copy[outv]`;
+    filter += `[v0]format=yuv420p[outv]`;
   } else {
     let prev = "v0";
     for (let i = 1; i < localFiles.length; i++) {

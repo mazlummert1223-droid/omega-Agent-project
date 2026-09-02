@@ -36,6 +36,8 @@ export default function SettingsPage() {
   const [autoSave, setAutoSave] = useState(() => localStorage.getItem('omega_autosave') !== 'false');
   const [confirmDel, setConfirmDel] = useState(() => localStorage.getItem('omega_confirm_delete') === 'true');
   const [notifications, setNotifications] = useState(() => localStorage.getItem('omega_notifications') !== 'false');
+  const [fontSize, setFontSize] = useState(() => localStorage.getItem('omega_font_size') || 'medium');
+  const [density, setDensity] = useState(() => localStorage.getItem('omega_density') || 'comfortable');
   const [testingConnection, setTestingConnection] = useState(false);
   const user = getUser();
 
@@ -46,8 +48,12 @@ export default function SettingsPage() {
     localStorage.setItem('omega_autosave', String(autoSave));
     localStorage.setItem('omega_confirm_delete', String(confirmDel));
     localStorage.setItem('omega_notifications', String(notifications));
+    localStorage.setItem('omega_font_size', fontSize);
+    localStorage.setItem('omega_density', density);
     document.documentElement.dataset.omegaTheme = theme;
-  }, [theme, lang, tz, autoSave, confirmDel, notifications]);
+    document.documentElement.dataset.omegaFontSize = fontSize;
+    document.documentElement.dataset.omegaDensity = density;
+  }, [theme, lang, tz, autoSave, confirmDel, notifications, fontSize, density]);
 
   const clearData = () => {
     if (confirmDel && !window.confirm('Tüm yerel sohbet, uygulama ve ayar verileri silinsin mi?')) return;
@@ -70,8 +76,12 @@ export default function SettingsPage() {
   };
 
   const copyApiPath = async () => {
-    await navigator.clipboard.writeText(`${window.location.origin}/api`);
-    toast.success('API adresi kopyalandı');
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/api`);
+      toast.success('API adresi kopyalandı');
+    } catch {
+      toast.error('Kopyalama desteklenmiyor');
+    }
   };
 
   return (
@@ -195,8 +205,29 @@ export default function SettingsPage() {
         {section === 'appearance' && (
           <div className="max-w-lg animate-fade-up">
             <h3 className="text-[17px] font-display font-semibold mb-6" style={{ color: '#E8E8E8' }}>Appearance</h3>
-            <div className="rounded-2xl p-5" style={{ background: '#111', border: '1px solid #1E1E1E' }}>
-              <p className="text-[13px] mb-2" style={{ color: '#888' }}>Font size, density, and display preferences will appear here in a future update.</p>
+            <div className="rounded-2xl p-5 space-y-5" style={{ background: '#111', border: '1px solid #1E1E1E' }}>
+              <div>
+                <p className="text-[12px] font-semibold mb-3" style={{ color: '#888', letterSpacing: '0.06em' }}>FONT SIZE</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {['small', 'medium', 'large'].map(value => (
+                    <button key={value} onClick={() => setFontSize(value)} className="py-2 rounded-lg text-xs capitalize"
+                      style={{ background: fontSize === value ? 'rgba(240,151,46,.14)' : '#181818', color: fontSize === value ? '#F0972E' : '#777', border: `1px solid ${fontSize === value ? 'rgba(240,151,46,.3)' : '#252525'}` }}>
+                      {value}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-[12px] font-semibold mb-3" style={{ color: '#888', letterSpacing: '0.06em' }}>DENSITY</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {['comfortable', 'compact'].map(value => (
+                    <button key={value} onClick={() => setDensity(value)} className="py-2 rounded-lg text-xs capitalize"
+                      style={{ background: density === value ? 'rgba(240,151,46,.14)' : '#181818', color: density === value ? '#F0972E' : '#777', border: `1px solid ${density === value ? 'rgba(240,151,46,.3)' : '#252525'}` }}>
+                      {value}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -205,7 +236,11 @@ export default function SettingsPage() {
           <div className="max-w-lg animate-fade-up">
             <h3 className="text-[17px] font-display font-semibold mb-6" style={{ color: '#E8E8E8' }}>Notifications</h3>
             <div className="rounded-2xl p-5" style={{ background: '#111', border: '1px solid #1E1E1E' }}>
-              <p className="text-[13px]" style={{ color: '#888' }}>Notification preferences coming soon.</p>
+              <p className="text-[13px]" style={{ color: '#888' }}>Omega’nın üretim ve bağlantı durumları için tarayıcı bildirimleri.</p>
+              <div className="mt-4 flex items-center justify-between">
+                <span className="text-[13px]" style={{ color: '#B0B0B0' }}>Bildirimleri etkinleştir</span>
+                <Toggle2 on={notifications} onChange={setNotifications} />
+              </div>
             </div>
           </div>
         )}
@@ -218,7 +253,7 @@ export default function SettingsPage() {
                 All conversations are stored locally on your device. No data is sent to external servers beyond AI inference calls.
               </p>
               <button
-                onClick={() => { localStorage.clear(); window.location.reload(); }}
+                onClick={clearData}
                 className="px-4 py-2 rounded-xl text-[12.5px] font-medium transition-all"
                 style={{ background: '#1E1E1E', border: '1px solid #2A2A2A', color: '#888' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#2A1414'; (e.currentTarget as HTMLElement).style.color = '#EF4444'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(239,68,68,0.3)'; }}
@@ -234,7 +269,7 @@ export default function SettingsPage() {
           <div className="max-w-lg animate-fade-up">
             <h3 className="text-[17px] font-display font-semibold mb-6" style={{ color: '#E8E8E8' }}>Integrations</h3>
             <div className="rounded-2xl p-5" style={{ background: '#111', border: '1px solid #1E1E1E' }}>
-              <p className="text-[13px]" style={{ color: '#888' }}>LTX Video AI is connected and active. More integrations coming soon.</p>
+              <p className="text-[13px]" style={{ color: '#888' }}>LTX Video AI sunucu tarafında yapılandırılır. Bu panel bağlantıyı test eder.</p>
               <div className="mt-4 flex items-center gap-3 p-3 rounded-xl" style={{ background: '#181818', border: '1px solid #252525' }}>
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(240,151,46,0.14)', border: '1px solid rgba(240,151,46,0.28)' }}>
                   <Zap className="w-4 h-4" style={{ color: '#F0972E' }} />
@@ -245,6 +280,9 @@ export default function SettingsPage() {
                 </div>
                 <div className="ml-auto w-2 h-2 rounded-full" style={{ background: '#22c55e' }} />
               </div>
+              <button onClick={testConnection} disabled={testingConnection} className="mt-3 w-full py-2.5 rounded-xl text-xs font-medium border border-border hover:border-primary/50 text-muted-foreground hover:text-white">
+                {testingConnection ? 'Test ediliyor…' : 'Bağlantıyı test et'}
+              </button>
             </div>
           </div>
         )}
@@ -259,7 +297,10 @@ export default function SettingsPage() {
                   <div className="text-[12px] mt-0.5" style={{ color: '#F0972E' }}>Active</div>
                 </div>
               </div>
-              <p className="text-[13px]" style={{ color: '#888' }}>Billing management will be available in the full release.</p>
+              <p className="text-[13px]" style={{ color: '#888' }}>LTX video kullanımı sağlayıcı hesabındaki bakiyeden düşer. Hesap ve kredi yönetimi LTX kontrol panelinden yapılır.</p>
+              <a href="https://console.ltx.io" target="_blank" rel="noreferrer" className="inline-flex items-center mt-4 px-3 py-2 rounded-xl text-xs font-medium" style={{ background: '#1E1E1E', border: '1px solid #2A2A2A', color: '#F0972E' }}>
+                LTX panelini aç
+              </a>
             </div>
           </div>
         )}
@@ -268,7 +309,11 @@ export default function SettingsPage() {
           <div className="max-w-lg animate-fade-up">
             <h3 className="text-[17px] font-display font-semibold mb-6" style={{ color: '#E8E8E8' }}>API</h3>
             <div className="rounded-2xl p-5" style={{ background: '#111', border: '1px solid #1E1E1E' }}>
-              <p className="text-[13px]" style={{ color: '#888' }}>API access and key management will be available in the full release.</p>
+              <p className="text-[13px]" style={{ color: '#888' }}>Yerel uygulama için kullanılabilir API kökü:</p>
+              <div className="mt-3 flex items-center gap-2 rounded-xl p-3" style={{ background: '#181818', border: '1px solid #252525' }}>
+                <code className="flex-1 text-xs text-muted-foreground truncate">{window.location.origin}/api</code>
+                <button onClick={copyApiPath} className="px-2.5 py-1.5 rounded-lg text-xs text-primary hover:bg-primary/10">Kopyala</button>
+              </div>
             </div>
           </div>
         )}

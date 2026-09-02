@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { Download, FileText, Film, Code2, Maximize2, Minimize2, Copy, Check } from 'lucide-react';
 import { IMG_MARKER } from '@/hooks/use-chat';
 import { OmegaMark } from './Sidebar';
+import { normalizeSandboxHtml } from '@/lib/sandbox';
 
 export const VIDEO_MARKER = "__VIDEO__:";
 export const APP_MARKER   = "__APP__:";
@@ -49,6 +50,19 @@ function parseFileMessage(content: string): { fileName: string; fileType: string
 function AppPreview({ code }: { code: string }) {
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied]     = useState(false);
+  const [sandboxError, setSandboxError] = useState('');
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.source !== iframeRef.current?.contentWindow) return;
+      if (event.data?.source !== 'omega-sandbox') return;
+      if (event.data.type === 'ready') setSandboxError('');
+      if (event.data.type === 'error') setSandboxError(event.data.message || 'Uygulama hatası');
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(code).then(() => {
@@ -84,7 +98,7 @@ function AppPreview({ code }: { code: string }) {
           >
             <Code2 className="w-3.5 h-3.5" style={{ color: '#F0972E' }} />
           </div>
-          <span className="text-xs font-semibold" style={{ color: '#C0C0C0' }}>Canlı Uygulama</span>
+           <span className="text-xs font-semibold" style={{ color: '#C0C0C0' }}>Canlı Uygulama</span>
           <span
             className="text-[10px] px-2 py-0.5 rounded-full font-medium"
             style={{ background: 'rgba(240,151,46,0.12)', color: '#F0972E', border: '1px solid rgba(240,151,46,0.2)' }}
@@ -121,18 +135,26 @@ function AppPreview({ code }: { code: string }) {
             onMouseLeave={e => (e.currentTarget.style.color = '#666')}
             title={expanded ? 'Küçült' : 'Tam ekran'}
           >
-            {expanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+           {expanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
           </button>
         </div>
       </div>
 
+       {sandboxError && (
+         <div className="px-4 py-2 text-[11px]" style={{ background: 'rgba(239,68,68,.08)', color: '#fca5a5', borderBottom: '1px solid rgba(239,68,68,.18)' }}>
+           Sandbox hatası: {sandboxError}
+         </div>
+       )}
+
       {/* iframe */}
       <iframe
-        srcDoc={code}
-        sandbox="allow-scripts allow-forms allow-modals"
+         ref={iframeRef}
+         srcDoc={normalizeSandboxHtml(code)}
+         sandbox="allow-scripts allow-forms allow-modals allow-popups allow-downloads allow-pointer-lock allow-presentation"
+         allow="fullscreen; autoplay; clipboard-read; clipboard-write"
         title="Omega App Preview"
         className="w-full transition-all duration-300"
-        style={{ height: expanded ? '680px' : '420px', border: 'none', background: '#fff' }}
+         style={{ height: expanded ? '780px' : '520px', border: 'none', background: '#fff' }}
       />
     </div>
   );

@@ -50,6 +50,9 @@ export default function ChatPage() {
       try {
         const { prompt, mode } = JSON.parse(stored);
         if (prompt) setTimeout(() => sendMessage(prompt, mode), 300);
+        if (JSON.parse(stored).openFile) {
+          setTimeout(() => window.dispatchEvent(new Event('omega-open-files')), 300);
+        }
       } catch {}
     }
   }, [convId]);

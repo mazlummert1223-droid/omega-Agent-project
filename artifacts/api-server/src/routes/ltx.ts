@@ -65,7 +65,7 @@ async function pollJob(jobId: string, endpoint: "text-to-video" | "extend"): Pro
       const errData = data as any;
       const errMsg = errData?.error?.message ?? "LTX job failed";
       if (errData?.error?.type === "insufficient_funds_error") {
-        throw new Error(`LTX hesabında yetersiz bakiye. ${errMsg}. Lütfen https://console.ltx.video adresinden kredi yükleyin.`);
+        throw new Error(`LTX hesabında yetersiz bakiye. ${errMsg}. Lütfen https://console.ltx.io adresinden kredi yükleyin.`);
       }
       throw new Error(errMsg);
     }

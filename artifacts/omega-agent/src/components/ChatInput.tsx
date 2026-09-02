@@ -59,6 +59,7 @@ export function ChatInput({
   const [showModels,      setShowModels]      = useState(false);
   const [showImgStyles,   setShowImgStyles]   = useState(false);
   const [showFilePanel,   setShowFilePanel]   = useState(false);
+  const [showMore,        setShowMore]        = useState(false);
   const [attachedFile,    setAttachedFile]    = useState<ParsedFile | null>(null);
   const [imageStyle,      setImageStyle]      = useState('default');
   const [internalGen,     setInternalGen]     = useState(false);
@@ -74,6 +75,12 @@ export function ChatInput({
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 180)}px`;
     }
   }, [input]);
+
+  useEffect(() => {
+    const openFiles = () => setShowFilePanel(true);
+    window.addEventListener('omega-open-files', openFiles);
+    return () => window.removeEventListener('omega-open-files', openFiles);
+  }, []);
 
   const hasImageKw     = IMAGE_KEYWORDS.some(k => input.toLowerCase().includes(k));
   const hasStyleSel    = imageStyle !== 'default';
@@ -159,7 +166,7 @@ Kullanıcı sorusu: ${text}`;
     setInput(''); setAttachedFile(null);
   };
 
-  const closeAll = () => { setShowModels(false); setShowImgStyles(false); };
+  const closeAll = () => { setShowModels(false); setShowImgStyles(false); setShowMore(false); };
 
   return (
     <div className="w-full max-w-[780px] mx-auto px-4 pb-5 pt-2 relative">
@@ -239,6 +246,22 @@ Kullanıcı sorusu: ${text}`;
               </button>
             ))}
           </div>
+        </Popup>
+      )}
+
+      {showMore && (
+        <Popup right>
+          <p className="text-[10px] font-semibold uppercase tracking-widest px-4 pt-3 pb-2" style={{ color: '#555' }}>Hızlı mod</p>
+          {[
+            { id: 'multi' as AgentMode, label: 'Çok ajanlı görev' },
+            { id: 'quantum' as AgentMode, label: 'Derin analiz' },
+            { id: 'researcher' as AgentMode, label: 'Web araştırması' },
+          ].map(item => (
+            <button key={item.id} onClick={() => { setSelectedModel(item.id); setShowMore(false); }}
+              className="w-full text-left px-4 py-2.5 text-xs hover:bg-white/5" style={{ color: selectedModel === item.id ? '#F0972E' : '#888' }}>
+              {item.label}
+            </button>
+          ))}
         </Popup>
       )}
 
@@ -331,8 +354,9 @@ Kullanıcı sorusu: ${text}`;
 
             {/* More / expand */}
             <button
+              onClick={() => { setShowMore(!showMore); setShowModels(false); setShowImgStyles(false); setShowFilePanel(false); }}
               className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
-              style={{ border: '1px solid #282828', color: '#555', background: 'transparent' }}
+              style={{ border: `1px solid ${showMore ? 'rgba(240,151,46,.3)' : '#282828'}`, color: showMore ? '#F0972E' : '#555', background: showMore ? 'rgba(240,151,46,.08)' : 'transparent' }}
               title="Daha fazla"
               onMouseEnter={e => { (e.currentTarget.style.color = '#999'); (e.currentTarget.style.background = '#1A1A1A'); }}
               onMouseLeave={e => { (e.currentTarget.style.color = '#555'); (e.currentTarget.style.background = 'transparent'); }}
@@ -343,9 +367,10 @@ Kullanıcı sorusu: ${text}`;
             {/* Video */}
             {onVideoGenerate && (
               <button
-                onClick={() => { onVideoGenerate(input.trim()); if (input.trim()) setInput(''); }}
+                disabled={!input.trim()}
+                onClick={() => { if (!input.trim()) { toast.info('Önce video açıklamasını yazın'); return; } onVideoGenerate(input.trim()); setInput(''); }}
                 className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
-                style={{ border: '1px solid #282828', color: '#555', background: 'transparent' }}
+                style={{ border: '1px solid #282828', color: input.trim() ? '#555' : '#333', background: 'transparent', opacity: input.trim() ? 1 : .65 }}
                 title="Video üret (LTX)"
                 onMouseEnter={e => { (e.currentTarget.style.color = '#999'); (e.currentTarget.style.background = '#1A1A1A'); }}
                 onMouseLeave={e => { (e.currentTarget.style.color = '#555'); (e.currentTarget.style.background = 'transparent'); }}

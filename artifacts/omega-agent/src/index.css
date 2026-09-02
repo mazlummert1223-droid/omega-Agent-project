@@ -67,6 +67,24 @@
   ::-webkit-scrollbar-thumb:hover { background: hsl(0 0% 20%); }
 }
 
+/* User preferences from Settings are applied globally, not just displayed. */
+html[data-omega-theme="light"] {
+  --bg: 0 0% 97%;
+  --fg: 0 0% 12%;
+  --card: 0 0% 100%;
+  --secondary: 0 0% 92%;
+  --secondary-fg: 0 0% 35%;
+  --muted: 0 0% 91%;
+  --muted-fg: 0 0% 42%;
+  --border: 0 0% 84%;
+}
+html[data-omega-theme="system"] {
+  color-scheme: dark;
+}
+html[data-omega-font-size="small"] { font-size: 14px; }
+html[data-omega-font-size="large"] { font-size: 17px; }
+html[data-omega-density="compact"] .rounded-xl { border-radius: .6rem; }
+
 /* ─── Keyframes ──────────────────────────────────────────── */
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(12px); }

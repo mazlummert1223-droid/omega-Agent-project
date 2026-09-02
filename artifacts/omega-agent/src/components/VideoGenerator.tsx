@@ -53,6 +53,38 @@ const LTX_DURATIONS = [
 const DEFAULT_CREDITS = 300;
 const CREDITS_KEY = 'omega_video_credits';
 
+async function consumeSse(
+  response: Response,
+  onEvent: (data: any) => void,
+) {
+  if (!response.ok) {
+    const body = await response.text().catch(() => '');
+    throw new Error(body || `Sunucu hatası: ${response.status}`);
+  }
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error('SSE akışı başlatılamadı');
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+  const consume = (block: string) => {
+    const line = block.split('\n').find(item => item.startsWith('data: '));
+    if (!line) return;
+    let data: any;
+    try { data = JSON.parse(line.slice(6)); } catch { return; }
+    onEvent(data);
+  };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+    const blocks = buffer.split(/\r?\n\r?\n/);
+    buffer = blocks.pop() || '';
+    blocks.forEach(consume);
+    if (done) break;
+  }
+  if (buffer.trim()) consume(buffer);
+}
+
 function getCredits(): number {
   try {
     const raw = localStorage.getItem(CREDITS_KEY);
@@ -141,41 +173,19 @@ export function VideoGenerator({ prompt: initialPrompt, onClose }: VideoGenerato
 
       const res = await fetch(`/api/ltx/generate?${params}`, { signal: ctrl.signal });
 
-      if (!res.ok || !res.body) {
-        throw new Error(`Sunucu hatası: ${res.status}`);
-      }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const text = decoder.decode(value, { stream: true });
-        const lines = text.split('\n').filter(l => l.startsWith('data: '));
-
-        for (const line of lines) {
-          try {
-            const data = JSON.parse(line.slice(6));
-
-            if (data.step === 'complete') {
-              setProgress(100);
-              setVideoUrl(data.videoUrl);
-              setStatus('Video hazır!');
-              setIsGenerating(false);
-            } else if (data.step === 'error') {
-              throw new Error(data.error ?? 'Bilinmeyen hata');
-            } else {
-              if (data.message) setStatus(data.message);
-              if (typeof data.progress === 'number') setProgress(data.progress);
-            }
-          } catch (parseErr: any) {
-            if (parseErr?.message && !parseErr.message.includes('JSON')) {
-              throw parseErr;
-            }
-          }
-        }
-      }
+       await consumeSse(res, data => {
+         if (data.step === 'complete') {
+           setProgress(100);
+           setVideoUrl(data.videoUrl);
+           setStatus('Video hazır!');
+           setIsGenerating(false);
+         } else if (data.step === 'error') {
+           throw new Error(data.error ?? 'Bilinmeyen hata');
+         } else {
+           if (data.message) setStatus(data.message);
+           if (typeof data.progress === 'number') setProgress(data.progress);
+         }
+       });
     } catch (err: any) {
       if (err?.name === 'AbortError') {
         refundCredits(cost);
@@ -184,13 +194,22 @@ export function VideoGenerator({ prompt: initialPrompt, onClose }: VideoGenerato
       } else {
         refundCredits(cost);
         refreshCredits();
-        setStatus('Hata: ' + (err?.message ?? 'Bağlantı sorunu'));
+        const message = err?.message ?? 'Bağlantı sorunu';
+        if (/insufficient funds|yetersiz bakiye|bakiye/i.test(message)) {
+          setMode('storyboard');
+          setDuration('30');
+          setStatus('LTX bakiyesi yetersiz — storyboard MP4 yedeğine geçiliyor…');
+          setIsGenerating(false);
+          setTimeout(() => generateStoryboard('30'), 0);
+          return;
+        }
+        setStatus('Hata: ' + message);
       }
       setIsGenerating(false);
     }
   };
 
-  const generateStoryboard = async () => {
+  const generateStoryboard = async (requestedDuration = duration) => {
     if (!prompt.trim()) return;
     setIsGenerating(true);
     setVideoData(null);
@@ -204,63 +223,47 @@ export function VideoGenerator({ prompt: initialPrompt, onClose }: VideoGenerato
       const response = await fetch('/api/video/generate-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: prompt.trim(), style, duration }),
+        body: JSON.stringify({ prompt: prompt.trim(), style, duration: requestedDuration }),
       });
 
-      const reader = response.body!.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const text = decoder.decode(value, { stream: true });
-        const lines = text.split('\n').filter(l => l.startsWith('data: '));
-
-        for (const line of lines) {
-          try {
-            const data = JSON.parse(line.slice(6));
-
-            if (data.step === 'script' && data.status === 'done') {
-              setVideoData(data.data);
-              setStatus(`Script hazır! ${data.data.scenes?.length} sahne bulundu. Görseller üretiliyor...`);
-            } else if (data.step === 'frame') {
-              if (data.status === 'generating') {
-                setStatus(`Sahne ${data.index + 1}/${data.total} görseli üretiliyor...`);
-                setProgress(Math.round((data.index / data.total) * 100));
-              } else if (data.status === 'done' && data.scene) {
-                const newScene = { ...data.scene, imageUrl: data.imageUrl };
-                setScenes(prev => {
-                  const exists = prev.findIndex(s => s.id === newScene.id);
-                  if (exists >= 0) {
-                    const arr = [...prev];
-                    arr[exists] = newScene;
-                    return arr;
-                  }
-                  return [...prev, newScene];
-                });
-              }
-            } else if (data.step === 'rendering') {
-              setStatus(data.message || 'Video birleştiriliyor...');
-              setProgress(95);
-            } else if (data.step === 'complete') {
-              setProgress(100);
-              if (data.videoUrl) {
-                setVideoUrl(data.videoUrl);
-                setStatus('Video hazır!');
-              } else {
-                setStatus('Sahneler hazır');
-              }
-              setIsGenerating(false);
-            } else if (data.error) {
-              setStatus('Hata: ' + data.error);
-              setIsGenerating(false);
-            }
-          } catch {}
-        }
-      }
-    } catch {
-      setStatus('Bağlantı hatası. Tekrar dene.');
+       await consumeSse(response, data => {
+         if (data.step === 'script' && data.status === 'done') {
+           setVideoData(data.data);
+           setStatus(`Script hazır! ${data.data.scenes?.length} sahne bulundu. Görseller üretiliyor...`);
+         } else if (data.step === 'frame') {
+           if (data.status === 'generating') {
+             setStatus(`Sahne ${data.index + 1}/${data.total} görseli üretiliyor...`);
+             setProgress(Math.round((data.index / data.total) * 100));
+           } else if (data.status === 'done' && data.scene) {
+             const newScene = { ...data.scene, imageUrl: data.imageUrl };
+             setScenes(prev => {
+               const exists = prev.findIndex(s => s.id === newScene.id);
+               if (exists >= 0) {
+                 const arr = [...prev];
+                 arr[exists] = newScene;
+                 return arr;
+               }
+               return [...prev, newScene];
+             });
+           }
+         } else if (data.step === 'rendering') {
+           setStatus(data.message || 'Video birleştiriliyor...');
+           setProgress(95);
+         } else if (data.step === 'complete') {
+           setProgress(100);
+           if (data.videoUrl) {
+             setVideoUrl(data.videoUrl);
+             setStatus('Video hazır!');
+           } else {
+             setStatus('Sahneler hazır, MP4 oluşturulamadı');
+           }
+           setIsGenerating(false);
+         } else if (data.error) {
+           throw new Error(data.error);
+         }
+       });
+     } catch (err: any) {
+       setStatus(err?.message || 'Bağlantı hatası. Tekrar dene.');
       setIsGenerating(false);
     }
   };

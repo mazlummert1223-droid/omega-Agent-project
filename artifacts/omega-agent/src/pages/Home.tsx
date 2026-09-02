@@ -104,7 +104,13 @@ function OmegaHero() {
 }
 
 /* ─── Home prompt bar ─── */
-function HomePromptBar({ onSend }: { onSend: (text: string, mode: string) => void }) {
+function HomePromptBar({
+  onSend,
+  onAttach,
+}: {
+  onSend: (text: string, mode: string) => void;
+  onAttach: () => void;
+}) {
   const [text, setText] = useState('');
   const ref = useRef<HTMLTextAreaElement>(null);
 
@@ -122,6 +128,7 @@ function HomePromptBar({ onSend }: { onSend: (text: string, mode: string) => voi
   };
 
   const active = text.trim().length > 0;
+  const addPrefix = (prefix: string) => setText(current => current.startsWith(prefix) ? current : `${prefix}${current}`);
 
   return (
     <div
@@ -146,12 +153,12 @@ function HomePromptBar({ onSend }: { onSend: (text: string, mode: string) => voi
         autoFocus
       />
       <div className="flex items-center justify-between px-4 pb-3.5 gap-2">
-        <div className="flex items-center gap-1.5">
-          {[
-            { icon: <Paperclip className="w-[15px] h-[15px]" />, label: 'Attach' },
-            { icon: <Globe     className="w-[15px] h-[15px]" />, label: 'Web search', onClick: () => submit('researcher') },
-            { icon: <ImageIcon className="w-[15px] h-[15px]" />, label: 'Image' },
-            { icon: <Hash      className="w-[15px] h-[15px]" />, label: 'More' },
+         <div className="flex items-center gap-1.5">
+           {[
+             { icon: <Paperclip className="w-[15px] h-[15px]" />, label: 'Attach', onClick: onAttach },
+             { icon: <Globe     className="w-[15px] h-[15px]" />, label: 'Web search', onClick: () => text.trim() ? submit('researcher') : (addPrefix('Web’de ara: '), ref.current?.focus()) },
+             { icon: <ImageIcon className="w-[15px] h-[15px]" />, label: 'Image', onClick: () => { addPrefix('Görsel oluştur: '); ref.current?.focus(); } },
+             { icon: <Hash      className="w-[15px] h-[15px]" />, label: 'More', onClick: () => { addPrefix('Omega Agent: '); ref.current?.focus(); } },
           ].map((btn, i) => (
             <button key={i} title={btn.label} onClick={btn.onClick}
               className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
@@ -202,6 +209,12 @@ export default function Home() {
     setLocation(`/chat/${conv.id}`);
   };
 
+  const openChatForFile = () => {
+    const conv = create('Dosya analizi');
+    sessionStorage.setItem(`chat_${conv.id}_init`, JSON.stringify({ openFile: true }));
+    setLocation(`/chat/${conv.id}`);
+  };
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden" style={{ background: '#090909' }}>
       {/* Mobile header */}
@@ -219,7 +232,7 @@ export default function Home() {
 
           {/* Prompt bar */}
           <div className="w-full mb-5">
-            <HomePromptBar onSend={start} />
+            <HomePromptBar onSend={start} onAttach={openChatForFile} />
           </div>
 
           {/* Action cards */}

@@ -4,6 +4,7 @@ import { Download, Trash2, Code2, Maximize2, Minimize2, RefreshCw, Plus, Pencil,
 import { Link } from 'wouter';
 import { useSidebar } from '@/App';
 import { Menu } from 'lucide-react';
+import { normalizeSandboxHtml } from '@/lib/sandbox';
 
 export default function MyApps() {
   const [apps, setApps]         = useState<LocalApp[]>([]);
@@ -234,8 +235,9 @@ export default function MyApps() {
             <div className="flex-1 overflow-hidden" style={{ background: '#fff' }}>
               <iframe
                 key={selected.id}
-                srcDoc={selected.html}
-                sandbox="allow-scripts allow-forms allow-modals allow-pointer-lock"
+                 srcDoc={normalizeSandboxHtml(selected.html)}
+                 sandbox="allow-scripts allow-forms allow-modals allow-popups allow-downloads allow-pointer-lock allow-presentation"
+                 allow="fullscreen; autoplay; clipboard-read; clipboard-write"
                 title="preview"
                 className="w-full h-full border-none"
               />

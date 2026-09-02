@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Paintbrush, Bell, Shield, Zap, CreditCard, Code2, Info,
   Sun, Moon, Monitor, ChevronRight
 } from 'lucide-react';
 import { signOut } from '@/lib/auth';
 import { getUser } from '@/lib/auth';
+import { toast } from 'sonner';
 
 const SECTIONS = [
   { id: 'general',     label: 'General',       Icon: Monitor  },
@@ -29,12 +30,49 @@ function Toggle2({ on, onChange }: { on: boolean; onChange: (v: boolean) => void
 
 export default function SettingsPage() {
   const [section, setSection] = useState('general');
-  const [theme, setTheme]     = useState<'dark' | 'light' | 'system'>('dark');
-  const [lang, setLang]       = useState('English');
-  const [tz, setTz]           = useState('(UTC+03:00) Istanbul');
-  const [autoSave, setAutoSave]     = useState(true);
-  const [confirmDel, setConfirmDel] = useState(false);
+  const [theme, setTheme] = useState<'dark' | 'light' | 'system'>(() => (localStorage.getItem('omega_theme') as any) || 'dark');
+  const [lang, setLang] = useState(() => localStorage.getItem('omega_language') || 'English');
+  const [tz, setTz] = useState(() => localStorage.getItem('omega_timezone') || '(UTC+03:00) Istanbul');
+  const [autoSave, setAutoSave] = useState(() => localStorage.getItem('omega_autosave') !== 'false');
+  const [confirmDel, setConfirmDel] = useState(() => localStorage.getItem('omega_confirm_delete') === 'true');
+  const [notifications, setNotifications] = useState(() => localStorage.getItem('omega_notifications') !== 'false');
+  const [testingConnection, setTestingConnection] = useState(false);
   const user = getUser();
+
+  useEffect(() => {
+    localStorage.setItem('omega_theme', theme);
+    localStorage.setItem('omega_language', lang);
+    localStorage.setItem('omega_timezone', tz);
+    localStorage.setItem('omega_autosave', String(autoSave));
+    localStorage.setItem('omega_confirm_delete', String(confirmDel));
+    localStorage.setItem('omega_notifications', String(notifications));
+    document.documentElement.dataset.omegaTheme = theme;
+  }, [theme, lang, tz, autoSave, confirmDel, notifications]);
+
+  const clearData = () => {
+    if (confirmDel && !window.confirm('Tüm yerel sohbet, uygulama ve ayar verileri silinsin mi?')) return;
+    localStorage.clear();
+    toast.success('Yerel veriler temizlendi');
+    window.location.reload();
+  };
+
+  const testConnection = async () => {
+    setTestingConnection(true);
+    try {
+      const response = await fetch('/api/healthz');
+      if (!response.ok) throw new Error();
+      toast.success('API bağlantısı çalışıyor');
+    } catch {
+      toast.error('API bağlantısı kurulamadı');
+    } finally {
+      setTestingConnection(false);
+    }
+  };
+
+  const copyApiPath = async () => {
+    await navigator.clipboard.writeText(`${window.location.origin}/api`);
+    toast.success('API adresi kopyalandı');
+  };
 
   return (
     <div className="flex-1 overflow-hidden flex" style={{ background: '#0B0B0B' }}>

@@ -3,7 +3,9 @@ import type { IRouter } from "express";
 
 const router: IRouter = Router();
 
-const LTX_BASE = "https://api.ltx.video";
+// LTX moved the public API from api.ltx.video to api.ltx.io. Keeping this in
+// one place also makes the provider easy to swap when the API version changes.
+const LTX_BASE = "https://api.ltx.io";
 const LTX_KEY = process.env["LTX_API_KEY"] ?? "";
 
 const RESOLUTION = "1920x1080";
@@ -11,8 +13,11 @@ const BASE_DURATION = 10;
 
 type Quality = "fast" | "pro";
 
-function getModel(quality: Quality) {
-  return quality === "pro" ? "ltx-2-3-pro" : "ltx-2-3-fast";
+function getModel(quality: Quality, needsExtension: boolean) {
+  // LTX-2.5 is the current text-to-video model. Only LTX-2.3 Pro supports
+  // the extend endpoint, so long videos must use the compatible model.
+  if (needsExtension) return "ltx-2-3-pro";
+  return quality === "pro" ? "ltx-2-5-pro" : "ltx-2-5-fast";
 }
 
 async function submitGeneration(prompt: string, duration: number, model: string) {
@@ -40,7 +45,15 @@ async function pollJob(jobId: string, endpoint: "text-to-video" | "extend"): Pro
       headers: { Authorization: `Bearer ${LTX_KEY}` },
       signal: AbortSignal.timeout(15000),
     });
-    if (!res.ok) continue;
+    if (!res.ok) {
+      // A transient provider error is retryable, but a missing job is not.
+      if (res.status === 404) throw new Error("LTX işi bulunamadı veya süresi doldu");
+      if (res.status >= 400 && res.status < 500) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error((error as any)?.error?.message ?? `LTX durum hatası: HTTP ${res.status}`);
+      }
+      continue;
+    }
     const data = (await res.json()) as {
       status: string;
       result?: { video_url: string };
@@ -108,10 +121,12 @@ router.get("/generate", async (req: Request, res: Response) => {
   res.setHeader("X-Accel-Buffering", "no");
   res.flushHeaders();
 
-  const model = getModel(quality);
-
   try {
     const totalDuration = durationParam;
+    if (!Number.isFinite(totalDuration) || totalDuration < 6 || totalDuration > 60) {
+      throw new Error("Video süresi 6 ile 60 saniye arasında olmalı");
+    }
+
     const segments: Array<{ duration: number }> = [];
 
     if (totalDuration <= 10) {
@@ -120,13 +135,17 @@ router.get("/generate", async (req: Request, res: Response) => {
       segments.push({ duration: BASE_DURATION });
       let remaining = totalDuration - BASE_DURATION;
       while (remaining > 0) {
-        const seg = Math.min(20, remaining);
+        // LTX extension accepts the same short clip sizes as the source
+        // generation. Never submit a 20s extension, which is rejected by the
+        // provider even though the UI supports longer final videos.
+        const seg = Math.min(10, remaining);
         segments.push({ duration: seg });
         remaining -= seg;
       }
     }
 
     const totalSegments = segments.length;
+    const model = getModel(quality, totalSegments > 1);
     let currentVideoUrl = "";
 
     for (let i = 0; i < totalSegments; i++) {

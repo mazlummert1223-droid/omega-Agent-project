@@ -44,7 +44,7 @@ const DURATIONS = [
 ];
 
 const LTX_DURATIONS = [
-  { value: '5', label: '5 sn', credits: 15 },
+  { value: '6', label: '6 sn', credits: 15 },
   { value: '10', label: '10 sn', credits: 25 },
   { value: '30', label: '30 sn', credits: 50 },
   { value: '60', label: '1 dk', credits: 100 },
@@ -89,7 +89,7 @@ export function VideoGenerator({ prompt: initialPrompt, onClose }: VideoGenerato
   const [mode, setMode] = useState<Mode>('ltx');
   const [prompt, setPrompt] = useState(initialPrompt || '');
   const [style, setStyle] = useState('cinematic');
-  const [duration, setDuration] = useState('10');
+  const [duration, setDuration] = useState('6');
   const [ltxQuality, setLtxQuality] = useState<'fast' | 'pro'>('fast');
   const [isGenerating, setIsGenerating] = useState(false);
   const [status, setStatus] = useState('');
@@ -360,7 +360,7 @@ export function VideoGenerator({ prompt: initialPrompt, onClose }: VideoGenerato
               {/* Mode Tabs */}
               <div className="flex gap-2 p-1 bg-secondary rounded-2xl">
                 <button
-                  onClick={() => { setMode('ltx'); setDuration('10'); }}
+                   onClick={() => { setMode('ltx'); setDuration('6'); }}
                   className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all"
                   style={mode === 'ltx'
                     ? { background: '#F0972E', color: '#0A0A0A', boxShadow: '0 2px 12px rgba(240,151,46,0.35)' }
@@ -383,7 +383,7 @@ export function VideoGenerator({ prompt: initialPrompt, onClose }: VideoGenerato
 
               {mode === 'ltx' && (
                 <div className="rounded-2xl px-4 py-3 text-xs" style={{ background: 'rgba(240,151,46,0.08)', border: '1px solid rgba(240,151,46,0.18)', color: '#C8882A' }}>
-                  LTX-Video 2.3 ile gerçek yapay zeka videosu — 1080p, 10 sn'ye kadar
+                   LTX-Video 2.5 ile gerçek yapay zeka videosu — 1080p, 6–10 sn; uzun videolar otomatik segmentlenir
                 </div>
               )}
 

@@ -1,3 +1,22 @@
 <svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="180" height="180" rx="36" fill="#FF3C00"/>
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="35%" r="80%">
+      <stop offset="0%" stop-color="#241A0B"/>
+      <stop offset="100%" stop-color="#090909"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="42" y1="34" x2="138" y2="150" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE4A0"/>
+      <stop offset=".48" stop-color="#F0972E"/>
+      <stop offset="1" stop-color="#B95C0B"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="180" height="180" rx="40" fill="url(#bg)"/>
+  <circle cx="90" cy="90" r="66" stroke="#F0972E" stroke-opacity=".12" stroke-width="1"/>
+  <path d="M43 119V86c0-30.93 21.04-53 47-53s47 22.07 47 53v33" stroke="url(#gold)" stroke-width="12" stroke-linecap="round" filter="url(#glow)"/>
+  <path d="M43 118 74 148M137 118l-31 30" stroke="url(#gold)" stroke-width="12" stroke-linecap="round" filter="url(#glow)"/>
+  <path d="M37 148h106" stroke="#FFCA6A" stroke-width="10" stroke-linecap="round" filter="url(#glow)"/>
 </svg>

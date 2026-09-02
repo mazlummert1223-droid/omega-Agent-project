@@ -12,6 +12,7 @@ export function OmegaLogo({ size = 36 }: { size?: number }) {
     <img
       src="/omega-logo.png"
       alt="Omega"
+      className="omega-logo"
       width={size}
       height={size}
       style={{
@@ -28,6 +29,7 @@ export function OmegaMark({ size = 22 }: { size?: number }) {
     <img
       src="/omega-logo.png"
       alt="Ω"
+      className="omega-logo omega-mark"
       width={size}
       height={size}
       style={{

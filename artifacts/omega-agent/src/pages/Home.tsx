@@ -74,6 +74,7 @@ function OmegaHero() {
         <img
           src="/omega-logo.png"
           alt="Omega"
+          className="omega-hero-logo"
           width={168}
           height={168}
           style={{

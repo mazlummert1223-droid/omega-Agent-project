@@ -2,3 +2,4 @@
 - [Video provider fallback](video-provider-fallback.md) — LTX bakiye hatasını görünür tut, ücretsiz storyboard MP4 yolunu koru.
 - [Omega identity and project memory](omega-identity-and-memory.md) — mod kimlikleri merkezi, Agent geçmişi ilk brief ve son adımlarla taşınmalı.
 - [Image prompt preservation](image-prompt-preservation.md) — görsel promptu önce ana özneyi kilitleyip sonra İngilizce ayrıntılandırmalı.
+- [PWA branding](pwa-branding.md) — Chrome ana ekran kimliği manifest, gerçek PNG ikonlar ve OMEGA AI kısa adıyla tanımlanmalı.

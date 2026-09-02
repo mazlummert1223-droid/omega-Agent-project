@@ -110,9 +110,21 @@ html[data-omega-density="compact"] .rounded-xl { border-radius: .6rem; }
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
+@keyframes omega-logo-breathe {
+  0%, 100% { transform: translateY(0) scale(1); filter: brightness(1) saturate(1); }
+  50% { transform: translateY(-2px) scale(1.018); filter: brightness(1.08) saturate(1.08); }
+}
+@keyframes omega-logo-shine {
+  0%, 72%, 100% { opacity: 0; transform: translateX(-130%) skewX(-18deg); }
+  82% { opacity: .42; transform: translateX(130%) skewX(-18deg); }
+}
+@keyframes omega-rise {
+  from { opacity: 0; transform: translateY(14px) scale(.985); filter: blur(3px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
 
-.animate-fade-up       { animation: fade-up  0.38s cubic-bezier(.22,.68,0,1.12) both; }
-.animate-fade-in       { animation: fade-in  0.28s ease both; }
+.animate-fade-up       { animation: omega-rise 0.48s cubic-bezier(.22,.68,0,1.04) both; }
+.animate-fade-in       { animation: fade-in  0.34s cubic-bezier(.22,.68,0,1) both; }
 .animate-omega-pulse   { animation: omega-pulse 3.5s ease-in-out infinite; }
 
 .typing-dot { animation: typing-bounce 1.2s ease infinite; }
@@ -122,7 +134,43 @@ html[data-omega-density="compact"] .rounded-xl { border-radius: .6rem; }
 .shimmer {
   background: linear-gradient(90deg, hsl(0 0% 10%) 25%, hsl(0 0% 16%) 50%, hsl(0 0% 10%) 75%);
   background-size: 200% 100%;
-  animation: shimmer 1.8s infinite;
+  animation: shimmer 2.2s cubic-bezier(.4,0,.2,1) infinite;
+}
+
+/* The Ω mark is the visual anchor: motion stays warm, soft and restrained. */
+.omega-logo {
+  transform-origin: center;
+  transition: transform .35s cubic-bezier(.22,.68,0,1), filter .35s ease;
+}
+.omega-logo:hover {
+  transform: translateY(-1px) scale(1.05);
+}
+.omega-mark {
+  animation: omega-logo-breathe 4.8s ease-in-out infinite;
+}
+.omega-hero-logo {
+  animation: omega-logo-breathe 5.5s ease-in-out infinite;
+  transform-origin: center;
+}
+.omega-hero-logo::after {
+  content: "";
+}
+
+/* Smooth interactive feedback without making the dark UI feel busy. */
+button, a, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+button:active, [role="button"]:active {
+  transform: translateY(1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
 }
 
 /* ─── Sidebar overlay ────────────────────────────────────── */

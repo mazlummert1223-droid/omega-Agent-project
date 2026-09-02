@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { Menu, Paperclip, Globe, Image as ImageIcon, Hash, ArrowUp } from 'lucide-react';
 import { useSidebar } from '@/App';
+import { OmegaGlyph } from '@/components/Sidebar';
 import { useLocalConversations } from '@/hooks/use-chat';
 
 /* ─── Research / Analyze / Create / Automate icons (pixel-perfect SVG) ─── */
@@ -69,19 +70,14 @@ function OmegaHero() {
         }}
       />
 
-      {/* === Real Omega logo — SVG luminance→alpha filter removes dark background === */}
+      {/* === Transparent Omega mark — no rectangular source image background === */}
       <div className="relative z-10 mb-8">
-        <img
-          src="/omega-logo.png"
-          alt="Omega"
+        <OmegaGlyph
           className="omega-hero-logo"
-          width={168}
-          height={168}
+          size={168}
           style={{
-            objectFit: 'contain',
             display: 'block',
             filter:
-              'url(#omega-logo-filter) ' +
               'drop-shadow(0 0 30px rgba(255,210,80,0.95)) ' +
               'drop-shadow(0 0 70px rgba(230,130,30,0.65)) ' +
               'drop-shadow(0 0 140px rgba(190,90,10,0.40))',

@@ -162,7 +162,9 @@ export default function ChatPage() {
                   <div className="relative rounded-xl overflow-hidden shimmer"
                     style={{ aspectRatio: '1/1', maxWidth: '280px', background: '#111', border: '1px solid #222' }}>
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                      <Loader2 className="w-7 h-7 animate-spin" style={{ color: 'rgba(240,151,46,0.5)' }} />
+                       <span className="omega-thinking" aria-label="Omega görsel hazırlıyor">
+                         <OmegaMark size={24} />
+                       </span>
                       <p className="text-[12px] text-center px-4" style={{ color: '#555' }}>
                         Generating image…
                       </p>
@@ -182,10 +184,10 @@ export default function ChatPage() {
               <div className="flex-shrink-0 mt-0.5">
                 <OmegaMark size={28} />
               </div>
-              <div className="flex items-center gap-1.5 pt-2">
-                <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(240,151,46,0.6)' }} />
-                <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(240,151,46,0.6)' }} />
-                <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(240,151,46,0.6)' }} />
+               <div className="pt-1">
+                 <span className="omega-thinking" aria-label="Omega yanıt hazırlıyor">
+                   <OmegaMark size={20} />
+                 </span>
               </div>
             </div>
           )}

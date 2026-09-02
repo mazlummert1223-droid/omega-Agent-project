@@ -118,6 +118,11 @@ html[data-omega-density="compact"] .rounded-xl { border-radius: .6rem; }
   0%, 72%, 100% { opacity: 0; transform: translateX(-130%) skewX(-18deg); }
   82% { opacity: .42; transform: translateX(130%) skewX(-18deg); }
 }
+@keyframes omega-thinking-ring {
+  0% { transform: scale(.72) rotate(0deg); opacity: .35; }
+  50% { transform: scale(1.08) rotate(180deg); opacity: .9; }
+  100% { transform: scale(.72) rotate(360deg); opacity: .35; }
+}
 @keyframes omega-rise {
   from { opacity: 0; transform: translateY(14px) scale(.985); filter: blur(3px); }
   to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
@@ -152,8 +157,28 @@ html[data-omega-density="compact"] .rounded-xl { border-radius: .6rem; }
   animation: omega-logo-breathe 5.5s ease-in-out infinite;
   transform-origin: center;
 }
-.omega-hero-logo::after {
+.omega-thinking {
+  position: relative;
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+}
+.omega-thinking::before {
   content: "";
+  position: absolute;
+  inset: 1px;
+  border: 1px solid rgba(240,151,46,.52);
+  border-top-color: rgba(255,220,145,.95);
+  border-radius: 50%;
+  animation: omega-thinking-ring 1.8s cubic-bezier(.4,0,.2,1) infinite;
+  pointer-events: none;
+}
+.omega-thinking .omega-mark {
+  position: relative;
+  z-index: 1;
+  animation-duration: 2.4s;
 }
 
 /* Smooth interactive feedback without making the dark UI feel busy. */

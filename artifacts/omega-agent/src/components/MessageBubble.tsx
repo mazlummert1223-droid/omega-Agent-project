@@ -249,16 +249,14 @@ export function MessageBubble({ role, content, isStreaming }: MessageBubbleProps
 
       {/* Content */}
       <div className="flex-1 min-w-0 pt-0.5">
-        {/* Name + streaming dots */}
+        {/* Name + animated Omega thinking indicator */}
         <div className="flex items-center gap-2.5 mb-2.5">
           <span className="text-[13px] font-semibold font-display" style={{ color: '#F0972E' }}>
             Omega
           </span>
           {isStreaming && (
-            <span className="flex gap-1 items-center">
-              <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(240,151,46,0.6)' }} />
-              <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(240,151,46,0.6)' }} />
-              <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(240,151,46,0.6)' }} />
+            <span className="omega-thinking" aria-label="Omega yanıt hazırlıyor">
+              <OmegaMark size={18} />
             </span>
           )}
         </div>

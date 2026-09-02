@@ -3,7 +3,7 @@ import { MultiTaskEvent } from '@/hooks/use-chat';
 import { CheckCircle2, Loader2, AlertCircle, ChevronRight, ChevronDown, Brain, Search, Code2, Target, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MarkdownRenderer } from './MarkdownRenderer';
-import { OmegaLogo } from './Sidebar';
+import { OmegaLogo, OmegaMark } from './Sidebar';
 
 interface MultiTaskProgressProps {
   events: MultiTaskEvent[];
@@ -145,10 +145,8 @@ export function MultiTaskProgress({ events, synthesisText }: MultiTaskProgressPr
                           <MarkdownRenderer content={event.content} />
                         </div>
                       ) : isRunning ? (
-                        <div className="flex items-center gap-1 mt-1">
-                          <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: cfg.color, opacity: 0.6 }} />
-                          <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: cfg.color, opacity: 0.6 }} />
-                          <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: cfg.color, opacity: 0.6 }} />
+                        <div className="omega-thinking mt-1" aria-label={`${cfg.label} çalışıyor`}>
+                          <OmegaMark size={18} />
                         </div>
                       ) : null}
                     </div>
@@ -179,10 +177,8 @@ export function MultiTaskProgress({ events, synthesisText }: MultiTaskProgressPr
             <div className="prose">
               <MarkdownRenderer content={synthesisText} />
               {isSynthRunning && (
-                <span className="inline-flex items-center gap-0.5 ml-1">
-                  <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(240,151,46,0.55)' }} />
-                  <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(240,151,46,0.55)' }} />
-                  <span className="typing-dot w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(240,151,46,0.55)' }} />
+                  <span className="omega-thinking inline-flex align-middle ml-1" aria-label="Omega yanıtı birleştiriyor">
+                    <OmegaMark size={18} />
                 </span>
               )}
             </div>

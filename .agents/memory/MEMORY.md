@@ -3,3 +3,4 @@
 - [Omega identity and project memory](omega-identity-and-memory.md) — mod kimlikleri merkezi, Agent geçmişi ilk brief ve son adımlarla taşınmalı.
 - [Image prompt preservation](image-prompt-preservation.md) — görsel promptu önce ana özneyi kilitleyip sonra İngilizce ayrıntılandırmalı.
 - [PWA branding](pwa-branding.md) — Chrome ana ekran kimliği manifest, gerçek PNG ikonlar ve OMEGA AI kısa adıyla tanımlanmalı.
+- [Omega live web and logo](omega-live-web-and-logo.md) — Agent canlı web bağlamını tüm uzmanlara taşır; UI bekleme durumlarında şeffaf hareketli Ω kullanılır.

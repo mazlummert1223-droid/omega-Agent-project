@@ -6,35 +6,60 @@ import { useSidebar } from '@/App';
 import { useLocalConversations } from '@/hooks/use-chat';
 import { getUser, signOut } from '@/lib/auth';
 
-/* ─── Omega Logo — SVG luminance→alpha filter removes dark background ─── */
-export function OmegaLogo({ size = 36 }: { size?: number }) {
+/* ─── Omega mark — transparent inline SVG keeps the brand free of image boxes ─── */
+export function OmegaGlyph({
+  size = 36,
+  className,
+  style,
+}: {
+  size?: number;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   return (
-    <img
-      src="/omega-logo.png"
-      alt="Omega"
-      className="omega-logo"
+    <svg
       width={size}
       height={size}
+      viewBox="0 0 180 180"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      style={style}
+      aria-hidden="true"
+    >
+      <path d="M43 119V86c0-30.93 21.04-53 47-53s47 22.07 47 53v33" stroke="#F0972E" strokeWidth="12" strokeLinecap="round" />
+      <path d="M43 118 74 148M137 118l-31 30" stroke="#F0972E" strokeWidth="12" strokeLinecap="round" />
+      <path d="M37 148h106" stroke="#FFCA6A" strokeWidth="10" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function OmegaLogo({
+  size = 36,
+  className,
+}: {
+  size?: number;
+  className?: string;
+}) {
+  return (
+    <OmegaGlyph
+      size={size}
+      className={`omega-logo${className ? ` ${className}` : ''}`}
       style={{
-        objectFit: 'contain',
-        filter: 'url(#omega-logo-filter) drop-shadow(0 0 8px rgba(255,200,80,0.9))',
+        filter: 'drop-shadow(0 0 8px rgba(255,200,80,0.9))',
       }}
     />
   );
 }
 
 /* ─── Small mark for message bubbles ─── */
-export function OmegaMark({ size = 22 }: { size?: number }) {
+export function OmegaMark({ size = 22, className }: { size?: number; className?: string }) {
   return (
-    <img
-      src="/omega-logo.png"
-      alt="Ω"
+    <OmegaGlyph
       className="omega-logo omega-mark"
-      width={size}
-      height={size}
+      size={size}
       style={{
-        objectFit: 'contain',
-        filter: 'url(#omega-logo-filter) drop-shadow(0 0 5px rgba(255,200,80,0.75))',
+        filter: 'drop-shadow(0 0 5px rgba(255,200,80,0.75))',
       }}
     />
   );

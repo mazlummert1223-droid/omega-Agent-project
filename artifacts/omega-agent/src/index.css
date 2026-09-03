@@ -98,10 +98,6 @@ html[data-omega-density="compact"] .rounded-xl { border-radius: .6rem; }
   0%   { background-position: -200% 0; }
   100% { background-position:  200% 0; }
 }
-@keyframes typing-bounce {
-  0%, 60%, 100% { transform: translateY(0); }
-  30%            { transform: translateY(-4px); }
-}
 @keyframes omega-pulse {
   0%, 100% { opacity: 0.50; transform: scale(1);    }
   50%       { opacity: 0.85; transform: scale(1.06); }
@@ -111,12 +107,16 @@ html[data-omega-density="compact"] .rounded-xl { border-radius: .6rem; }
   to   { transform: rotate(360deg); }
 }
 @keyframes omega-logo-breathe {
-  0%, 100% { transform: translateY(0) scale(1); filter: brightness(1) saturate(1); }
-  50% { transform: translateY(-2px) scale(1.018); filter: brightness(1.08) saturate(1.08); }
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-2px) scale(1.018); }
 }
-@keyframes omega-logo-shine {
-  0%, 72%, 100% { opacity: 0; transform: translateX(-130%) skewX(-18deg); }
-  82% { opacity: .42; transform: translateX(130%) skewX(-18deg); }
+@keyframes omega-orbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes omega-halo {
+  0%, 100% { opacity: .32; transform: scale(.94); }
+  50% { opacity: .62; transform: scale(1.05); }
 }
 @keyframes omega-thinking-ring {
   0% { transform: scale(.72) rotate(0deg); opacity: .35; }
@@ -131,10 +131,6 @@ html[data-omega-density="compact"] .rounded-xl { border-radius: .6rem; }
 .animate-fade-up       { animation: omega-rise 0.48s cubic-bezier(.22,.68,0,1.04) both; }
 .animate-fade-in       { animation: fade-in  0.34s cubic-bezier(.22,.68,0,1) both; }
 .animate-omega-pulse   { animation: omega-pulse 3.5s ease-in-out infinite; }
-
-.typing-dot { animation: typing-bounce 1.2s ease infinite; }
-.typing-dot:nth-child(2) { animation-delay: 0.2s; }
-.typing-dot:nth-child(3) { animation-delay: 0.4s; }
 
 .shimmer {
   background: linear-gradient(90deg, hsl(0 0% 10%) 25%, hsl(0 0% 16%) 50%, hsl(0 0% 10%) 75%);
@@ -154,8 +150,47 @@ html[data-omega-density="compact"] .rounded-xl { border-radius: .6rem; }
   animation: omega-logo-breathe 4.8s ease-in-out infinite;
 }
 .omega-hero-logo {
-  animation: omega-logo-breathe 5.5s ease-in-out infinite;
+  position: relative;
+  z-index: 1;
+  animation: omega-logo-breathe 5.5s cubic-bezier(.4,0,.2,1) infinite;
   transform-origin: center;
+}
+.omega-hero-stage {
+  width: 168px;
+  height: 168px;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+}
+.omega-hero-stage::before {
+  content: "";
+  position: absolute;
+  inset: -24px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg 205deg,
+    rgba(255, 213, 120, .08) 220deg,
+    rgba(240, 151, 46, .78) 248deg,
+    rgba(255, 221, 145, .18) 270deg,
+    transparent 304deg 360deg
+  );
+  -webkit-mask: radial-gradient(transparent 64%, #000 65%, #000 67%, transparent 69%);
+  mask: radial-gradient(transparent 64%, #000 65%, #000 67%, transparent 69%);
+  animation: omega-orbit 10s linear infinite;
+  opacity: .62;
+  pointer-events: none;
+}
+.omega-hero-stage::after {
+  content: "";
+  position: absolute;
+  inset: -18px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(240,151,46,.36) 0%, rgba(240,151,46,.12) 42%, transparent 72%);
+  filter: blur(18px);
+  animation: omega-halo 4.8s ease-in-out infinite;
+  z-index: -1;
+  pointer-events: none;
 }
 .omega-thinking {
   position: relative;

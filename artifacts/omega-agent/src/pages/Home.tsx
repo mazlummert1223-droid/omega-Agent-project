@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { Menu, Paperclip, Globe, Image as ImageIcon, Hash, ArrowUp } from 'lucide-react';
 import { useSidebar } from '@/App';
-import { OmegaGlyph } from '@/components/Sidebar';
+import { OmegaLogo } from '@/components/Sidebar';
 import { useLocalConversations } from '@/hooks/use-chat';
 
 /* ─── Research / Analyze / Create / Automate icons (pixel-perfect SVG) ─── */
@@ -70,17 +70,14 @@ function OmegaHero() {
         }}
       />
 
-      {/* === Transparent Omega mark — no rectangular source image background === */}
-      <div className="relative z-10 mb-8">
-        <OmegaGlyph
+      {/* === Original Omega artwork — animation lives around the image, never inside it === */}
+      <div className="omega-hero-stage relative z-10 mb-8">
+        <OmegaLogo
           className="omega-hero-logo"
           size={168}
           style={{
             display: 'block',
-            filter:
-              'drop-shadow(0 0 30px rgba(255,210,80,0.95)) ' +
-              'drop-shadow(0 0 70px rgba(230,130,30,0.65)) ' +
-              'drop-shadow(0 0 140px rgba(190,90,10,0.40))',
+            filter: 'drop-shadow(0 0 30px rgba(255,210,80,0.95)) drop-shadow(0 0 70px rgba(230,130,30,0.65)) drop-shadow(0 0 140px rgba(190,90,10,0.40))',
           }}
         />
       </div>

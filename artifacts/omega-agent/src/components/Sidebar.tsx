@@ -6,8 +6,7 @@ import { useSidebar } from '@/App';
 import { useLocalConversations } from '@/hooks/use-chat';
 import { getUser, signOut } from '@/lib/auth';
 
-/* ─── Omega mark — transparent inline SVG keeps the brand free of image boxes ─── */
-export function OmegaGlyph({
+export function OmegaLogo({
   size = 36,
   className,
   style,
@@ -17,36 +16,17 @@ export function OmegaGlyph({
   style?: React.CSSProperties;
 }) {
   return (
-    <svg
+    <img
+      src="/omega-logo.png"
+      alt="Omega"
       width={size}
       height={size}
-      viewBox="0 0 180 180"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-      style={style}
-      aria-hidden="true"
-    >
-      <path d="M43 119V86c0-30.93 21.04-53 47-53s47 22.07 47 53v33" stroke="#F0972E" strokeWidth="12" strokeLinecap="round" />
-      <path d="M43 118 74 148M137 118l-31 30" stroke="#F0972E" strokeWidth="12" strokeLinecap="round" />
-      <path d="M37 148h106" stroke="#FFCA6A" strokeWidth="10" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-export function OmegaLogo({
-  size = 36,
-  className,
-}: {
-  size?: number;
-  className?: string;
-}) {
-  return (
-    <OmegaGlyph
-      size={size}
       className={`omega-logo${className ? ` ${className}` : ''}`}
       style={{
+        objectFit: 'contain',
+        mixBlendMode: 'screen',
         filter: 'drop-shadow(0 0 8px rgba(255,200,80,0.9))',
+        ...style,
       }}
     />
   );
@@ -55,10 +35,15 @@ export function OmegaLogo({
 /* ─── Small mark for message bubbles ─── */
 export function OmegaMark({ size = 22, className }: { size?: number; className?: string }) {
   return (
-    <OmegaGlyph
-      className="omega-logo omega-mark"
-      size={size}
+    <img
+      src="/omega-logo.png"
+      alt="Ω"
+      width={size}
+      height={size}
+      className={`omega-logo omega-mark${className ? ` ${className}` : ''}`}
       style={{
+        objectFit: 'contain',
+        mixBlendMode: 'screen',
         filter: 'drop-shadow(0 0 5px rgba(255,200,80,0.75))',
       }}
     />

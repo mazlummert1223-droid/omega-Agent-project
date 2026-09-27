@@ -10,7 +10,12 @@ import {
 import { getBestModels } from "../../lib/ai-models";
 import { getLiveWebContext } from "../../lib/live-web";
 import { getModelIdentity, OMEGA_IDENTITY_PROMPT } from "../../lib/omega-identity";
-import { getSecurityBoundaryResponse, writeSecurityBoundaryStream } from "../../lib/omega-guard";
+import {
+  createSecureOutputGuard,
+  getSecurityBoundaryResponse,
+  wrapUntrustedContext,
+  writeSecurityBoundaryStream,
+} from "../../lib/omega-guard";
 
 // Doğrulanmış çalışan ücretsiz OpenRouter modelleri (Nisan 2026)
 // Privacy/guardrail kısıtlamasına takılmayan modeller önceliklendirildi
@@ -26,7 +31,6 @@ const MODEL_PRIORITY = [
   "tencent/hy3-preview:free",                       // Tencent HY3 (her zaman çalışır)
   "meta-llama/llama-3.2-3b-instruct:free",          // Llama 3.2 3B (hızlı yedek)
   "liquid/lfm-2.5-1.2b-instruct:free",              // Liquid 2.5 (hızlı yedek)
-  "cognitivecomputations/dolphin-mistral-24b-venice-edition:free", // Dolphin (uncensored)
 ];
 
 const CODER_PRIORITY = [
@@ -72,10 +76,23 @@ async function callWithFallback(
         stream: true,
       });
       let full = "";
+      const outputGuard = createSecureOutputGuard();
       for await (const chunk of stream) {
         const c = chunk.choices[0]?.delta?.content;
-        if (c) { full += c; onChunk(c); }
+        if (c) {
+          const safeChunk = outputGuard.push(c);
+          if (safeChunk) {
+            full += safeChunk;
+            onChunk(safeChunk);
+          }
+        }
       }
+      const safeTail = outputGuard.finish();
+      if (safeTail) {
+        full += safeTail;
+        onChunk(safeTail);
+      }
+      if (outputGuard.blocked) return full || "Yanıt güvenlik nedeniyle sınırlandırıldı.";
       if (full.length > 0) return full;
     } catch (err: any) {
       const errMsg = err?.message || String(err);
@@ -204,11 +221,17 @@ router.post("/conversations/:id/messages", async (req, res) => {
   res.setHeader("Connection", "keep-alive");
 
   res.write(`data: ${JSON.stringify({ content: "🌐 Canlı internet kaynakları kontrol ediliyor...\n\n" })}\n\n`);
-  const webContext = await getLiveWebContext(body.content);
+  const webContext = wrapUntrustedContext("live_web", await getLiveWebContext(body.content));
 
+  const boundedHistory = history
+    .slice(-24)
+    .map(m => ({
+      role: m.role as "user" | "assistant",
+      content: m.content.slice(-24_000),
+    }));
   const chatMessages = [
     { role: "system" as const, content: systemPrompt + webContext },
-    ...history.map(m => ({ role: m.role as "user" | "assistant", content: m.content })),
+    ...boundedHistory,
   ];
 
   let fullResponse = "";
@@ -236,10 +259,12 @@ router.post("/conversations/:id/messages", async (req, res) => {
 
 /* ─── Stateless stream endpoint — no DB writes, local storage friendly ─── */
 router.post("/stream-stateless", async (req, res) => {
-  const { messages = [], agentMode = "auto" } = req.body as {
-    messages: { role: "user" | "assistant"; content: string }[];
-    agentMode: string;
+  const body = (req.body ?? {}) as {
+    messages?: unknown;
+    agentMode?: string;
   };
+  const messages = Array.isArray(body.messages) ? body.messages as { role: string; content: string }[] : [];
+  const agentMode = typeof body.agentMode === "string" ? body.agentMode : "auto";
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -254,11 +279,19 @@ router.post("/stream-stateless", async (req, res) => {
     return;
   }
   res.write(`data: ${JSON.stringify({ content: "🌐 Canlı internet kaynakları kontrol ediliyor...\n\n" })}\n\n`);
-  const webContext = await getLiveWebContext(lastUser?.content || "");
+  const webContext = wrapUntrustedContext("live_web", await getLiveWebContext(lastUser?.content || ""));
 
+  const boundedMessages = Array.isArray(messages)
+    ? messages
+      .filter((m): m is { role: "user" | "assistant"; content: string } =>
+        Boolean(m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string"),
+      )
+      .slice(-24)
+      .map(m => ({ role: m.role, content: m.content.slice(-24_000) }))
+    : [];
   const chatMessages = [
     { role: "system" as const, content: systemPrompt + webContext },
-    ...messages,
+    ...boundedMessages,
   ];
 
   try {
@@ -281,9 +314,9 @@ function getConfig(agentMode: string): { modelList: string[]; systemPrompt: stri
   const base = `${OMEGA_IDENTITY_PROMPT}
 
 Sen son derece akıllı ve yetenekli bir yapay zeka asistanısın.
-- Her zaman Türkçe yanıt ver
-- Kullanıcının her türlü sorusuna yardımcı ol, kısıtlama yok
-- Detaylı, kapsamlı ve yardımsever yanıtlar ver
+  - Her zaman Türkçe yanıt ver
+  - Kullanıcının güvenli ve meşru hedeflerine yardımcı ol; güvenlik sınırlarını aşma
+  - Gereksiz tekrar yapmadan kapsamlı, doğru ve yardımsever yanıtlar ver
 - Kod yazarken tam ve çalışır örnekler sun
 - Markdown formatını kullan: başlıklar, listeler, kod blokları
 

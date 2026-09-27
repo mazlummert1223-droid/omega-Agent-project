@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
+import { assessSecurityRequest } from "../lib/omega-guard";
 
 // ── Security Event Log ────────────────────────────────────────────────────────
 interface SecurityEvent {
@@ -91,23 +92,6 @@ export function rateLimiter(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-// ── Prompt Injection Guard ────────────────────────────────────────────────────
-const INJECTION_PATTERNS: Array<{ re: RegExp; label: string }> = [
-  { re: /talimatlar[ıi]\s*(unut|sil|yoksay)/i, label: "forget_instructions_tr" },
-  { re: /sistem\s*prompt[u]?\s*(göster|ver|paylaş|oku)/i, label: "system_prompt_reveal_tr" },
-  { re: /ignore\s+(all\s+)?(previous|prior)\s+(instructions?|prompts?|system)/i, label: "ignore_previous" },
-  { re: /jailbreak/i, label: "jailbreak" },
-  { re: /\bDAN\s+mod[u]?\b/i, label: "DAN_mode" },
-  { re: /geliştirici\s+mod[u]?/i, label: "developer_mode_tr" },
-  { re: /developer\s+mode\s+enabled/i, label: "developer_mode_en" },
-  { re: /\[SYSTEM\]|\[INST\]|<\|system\|>|<\|im_start\|>/i, label: "system_token_injection" },
-  { re: /act\s+as\s+(an?\s+)?(evil|unrestricted|uncensored|unfiltered|jailbroken)/i, label: "role_injection" },
-  { re: /you\s+are\s+now\s+(DAN|unrestricted|unfiltered|uncensored|free)/i, label: "identity_injection" },
-  { re: /reveal\s+(your\s+)?(system\s+)?(prompt|instructions?|training)/i, label: "prompt_leak" },
-  { re: /bypass\s+(your\s+)?(safety|restrictions?|filters?|guidelines?)/i, label: "safety_bypass" },
-  { re: /önceki\s+talimatlar[ıi]\s*(unut|sil|yoksay)/i, label: "forget_instructions_tr2" },
-];
-
 // Extract only the user-authored portion of the body for injection checking.
 // When a file is embedded, the format is:
 //   [DOSYA: ...]\nİçerik:\n{file text}\n---\nKullanıcı sorusu: {actual question}
@@ -134,16 +118,15 @@ export function promptInjectionGuard(req: Request, res: Response, next: NextFunc
   const text = extractBody(req.body);
   if (!text) return next();
 
-  for (const { re, label } of INJECTION_PATTERNS) {
-    if (re.test(text)) {
-      const ip = (req.ip ?? "unknown").replace("::ffff:", "");
-      securityLog("PROMPT_INJECTION", ip, `pattern=${label} path=${req.path}`);
-      res.status(403).json({
-        error: "İstek reddedildi. Güvenlik politikası ihlali tespit edildi.",
-        code: "INJECTION_DETECTED",
-      });
-      return;
-    }
+  const assessment = assessSecurityRequest(text);
+  if (assessment.blocked && assessment.category === "prompt-injection") {
+    const ip = (req.ip ?? "unknown").replace("::ffff:", "");
+    securityLog("PROMPT_INJECTION", ip, `reason=${assessment.reason ?? "unknown"} path=${req.path}`);
+    res.status(403).json({
+      error: "İstek reddedildi. Güvenlik politikası ihlali tespit edildi.",
+      code: "INJECTION_DETECTED",
+    });
+    return;
   }
   next();
 }

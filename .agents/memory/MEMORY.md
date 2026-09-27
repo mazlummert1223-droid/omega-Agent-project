@@ -4,3 +4,4 @@
 - [Image prompt preservation](image-prompt-preservation.md) — görsel promptu önce ana özneyi kilitleyip sonra İngilizce ayrıntılandırmalı.
 - [PWA branding](pwa-branding.md) — Chrome ana ekran kimliği manifest, gerçek PNG ikonlar ve OMEGA AI kısa adıyla tanımlanmalı.
 - [Omega live web and logo](omega-live-web-and-logo.md) — Agent canlı web bağlamını tüm uzmanlara taşır; UI bekleme durumlarında şeffaf hareketli Ω kullanılır.
+- [Omega security boundary](omega-security-boundary.md) — Güçlü modeller için sunucu guard’ı, untrusted context etiketleri ve çıktı sızıntısı kontrolü birlikte korunmalı.

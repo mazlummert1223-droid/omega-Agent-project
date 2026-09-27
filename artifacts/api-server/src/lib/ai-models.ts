@@ -43,7 +43,6 @@ const FALLBACK_MODELS = [
   "openrouter/free",
   ...CURATED_MODELS,
   "liquid/lfm-2.5-1.2b-instruct:free",
-  "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
 ];
 
 type CatalogModel = {
@@ -60,6 +59,13 @@ function isFree(model: CatalogModel): boolean {
   const prompt = Number(model.pricing?.prompt ?? NaN);
   const completion = Number(model.pricing?.completion ?? NaN);
   return id.endsWith(":free") || (Number.isFinite(prompt) && prompt === 0 && completion === 0);
+}
+
+function isSecurityApproved(id: string): boolean {
+  // Do not silently route user data through endpoints marketed as uncensored or
+  // jailbreak-oriented. Capability matters, but predictable safety behavior
+  // matters more for a multi-agent system.
+  return !/(?:uncensored|jailbreak|venice)/i.test(id);
 }
 
 function qualityScore(id: string, role: string): number {
@@ -83,6 +89,8 @@ function qualityScore(id: string, role: string): number {
   if (name.includes("deepseek-r1")) score += 108;
   if (name.includes("llama-4-maverick")) score += 105;
   if (name.includes("qwen3-coder")) score += 104;
+  if (name.includes("kimi-k2.7-code")) score += 118;
+  if (name.includes("kimi-k2.6")) score += 112;
   if (name.includes("405b")) score += 100;
   if (name.includes("80b")) score += 90;
   if (name.includes("70b")) score += 82;
@@ -110,12 +118,15 @@ async function getCatalog(): Promise<CatalogModel[]> {
 export async function getBestModels(role = "general"): Promise<string[]> {
   const catalog = await getCatalog();
   const available = new Set(
-    catalog.filter(isFree).map(model => model.id).filter((id): id is string => Boolean(id)),
+    catalog
+      .filter(model => isFree(model) && isSecurityApproved(model.id ?? ""))
+      .map(model => model.id)
+      .filter((id): id is string => Boolean(id)),
   );
 
   const curatedAvailable = CURATED_MODELS.filter(id => available.has(id));
   const discovered = catalog
-    .filter(model => isFree(model) && typeof model.id === "string")
+    .filter(model => isFree(model) && typeof model.id === "string" && isSecurityApproved(model.id))
     .filter(model => (model.context_length ?? 0) >= 16_000)
     .sort((a, b) => {
       const scoreDelta = qualityScore(b.id!, role) - qualityScore(a.id!, role);
@@ -125,7 +136,12 @@ export async function getBestModels(role = "general"): Promise<string[]> {
     .map(model => model.id as string);
 
   const roleFallbacks = role === "vision" ? VISION_FALLBACK_MODELS : [];
-  const result = [...new Set([...roleFallbacks, ...curatedAvailable, ...discovered, ...FALLBACK_MODELS])];
+  const result = [...new Set([
+    ...roleFallbacks,
+    ...curatedAvailable,
+    ...discovered,
+    ...FALLBACK_MODELS.filter(isSecurityApproved),
+  ])];
   const selected = result.slice(0, 18);
   return selected;
 }

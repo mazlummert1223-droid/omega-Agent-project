@@ -5,64 +5,12 @@ import { messages } from "@workspace/db";
 import { getBestModels } from "../../lib/ai-models";
 import { getLiveWebContext } from "../../lib/live-web";
 import { OMEGA_IDENTITY_PROMPT, getModelIdentity } from "../../lib/omega-identity";
-import { getSecurityBoundaryResponse, writeSecurityBoundaryStream } from "../../lib/omega-guard";
-
-/* ─── Model lists — each agent starts with DIFFERENT primary models
-   to avoid rate-limit collisions when running in parallel ─── */
-const RESEARCHER_MODELS = [
-  "nousresearch/hermes-3-llama-3.1-405b:free",
-  "meta-llama/llama-3.3-70b-instruct:free",
-  "google/gemma-4-31b-it:free",
-  "inclusionai/ling-2.6-1t:free",
-  "qwen/qwen3-next-80b-a3b-instruct:free",
-  "z-ai/glm-4.5-air:free",
-  "google/gemma-4-26b-a4b-it:free",
-  "tencent/hy3-preview:free",
-  "meta-llama/llama-3.2-3b-instruct:free",
-  "liquid/lfm-2.5-1.2b-instruct:free",
-  "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
-];
-
-const ENGINEER_MODELS = [
-  "qwen/qwen3-coder:free",
-  "qwen/qwen3-next-80b-a3b-instruct:free",
-  "google/gemma-4-26b-a4b-it:free",
-  "nousresearch/hermes-3-llama-3.1-405b:free",
-  "z-ai/glm-4.5-air:free",
-  "inclusionai/ling-2.6-flash:free",
-  "meta-llama/llama-3.3-70b-instruct:free",
-  "google/gemma-4-31b-it:free",
-  "tencent/hy3-preview:free",
-  "meta-llama/llama-3.2-3b-instruct:free",
-  "liquid/lfm-2.5-1.2b-instruct:free",
-];
-
-const STRATEGIST_MODELS = [
-  "google/gemma-4-31b-it:free",
-  "inclusionai/ling-2.6-1t:free",
-  "nousresearch/hermes-3-llama-3.1-405b:free",
-  "meta-llama/llama-3.3-70b-instruct:free",
-  "qwen/qwen3-next-80b-a3b-instruct:free",
-  "z-ai/glm-4.5-air:free",
-  "google/gemma-4-26b-a4b-it:free",
-  "tencent/hy3-preview:free",
-  "meta-llama/llama-3.2-3b-instruct:free",
-  "liquid/lfm-2.5-1.2b-instruct:free",
-  "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
-];
-
-const SYNTHESIS_MODELS = [
-  "nousresearch/hermes-3-llama-3.1-405b:free",
-  "qwen/qwen3-next-80b-a3b-instruct:free",
-  "meta-llama/llama-3.3-70b-instruct:free",
-  "google/gemma-4-31b-it:free",
-  "z-ai/glm-4.5-air:free",
-  "inclusionai/ling-2.6-1t:free",
-  "tencent/hy3-preview:free",
-  "meta-llama/llama-3.2-3b-instruct:free",
-  "liquid/lfm-2.5-1.2b-instruct:free",
-  "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
-];
+import {
+  createSecureOutputGuard,
+  getSecurityBoundaryResponse,
+  wrapUntrustedContext,
+  writeSecurityBoundaryStream,
+} from "../../lib/omega-guard";
 
 async function sleep(ms: number) {
   return new Promise(r => setTimeout(r, ms));
@@ -110,7 +58,6 @@ async function runAgent(
   userTask: string,
   onChunk: (text: string) => void
 ): Promise<string> {
-  let content = "";
   for (const model of models) {
     try {
       const stream = await openrouter.chat.completions.create({
@@ -122,23 +69,41 @@ async function runAgent(
         ],
         stream: true,
       });
+      let content = "";
+      const outputGuard = createSecureOutputGuard();
       for await (const chunk of stream) {
         const c = chunk.choices[0]?.delta?.content;
-        if (c) { content += c; onChunk(c); }
+        if (c) {
+          const safeChunk = outputGuard.push(c);
+          if (safeChunk) {
+            content += safeChunk;
+            onChunk(safeChunk);
+          }
+        }
       }
+      const safeTail = outputGuard.finish();
+      if (safeTail) {
+        content += safeTail;
+        onChunk(safeTail);
+      }
+      if (outputGuard.blocked) return content || "Yanıt güvenlik nedeniyle sınırlandırıldı.";
       if (content.trim().length > 30) return content;
-      content = "";          // too short — retry next model
     } catch {
       await sleep(600);
     }
   }
-  return content || "Yanıt üretilemedi.";
+  return "Yanıt üretilemedi.";
 }
 
 const router: IRouter = Router();
 
 router.post("/search", async (req, res) => {
   const { query, maxResults = 5 } = req.body as { query: string; maxResults?: number };
+  const guardedResponse = typeof query === "string" ? getSecurityBoundaryResponse(query) : null;
+  if (guardedResponse) {
+    res.json({ results: [], summary: guardedResponse });
+    return;
+  }
   try {
     const content = await runAgent(
       await getBestModels("researcher"),
@@ -180,7 +145,8 @@ router.post("/multi-task", async (req, res) => {
   send({ agent: "web", label: "Canlı İnternet", status: "running" });
   const webContext = await getLiveWebContext(task);
   const projectContext = buildProjectContext((req.body as any)?.history, task);
-  const taskWithContext = `${projectContext ? `${projectContext}\n\n` : ""}AKTİF KULLANICI İSTEĞİ:\n${task}`;
+  const taskWithContext = `${projectContext ? `${wrapUntrustedContext("project_history", projectContext)}\n\n` : ""}AKTİF KULLANICI İSTEĞİ:\n${task}`;
+  const safeWebContext = wrapUntrustedContext("live_web", webContext);
   send({ agent: "web", label: "Canlı İnternet", status: "done" });
 
   /* ── Agent definitions ── */
@@ -255,7 +221,7 @@ Cevabını "## 🎯 STRATEJİK YORUM" başlığıyla başlat. Markdown kullan.`;
     const content = await runAgent(
       await getBestModels(ag.role),
       ag.system,
-      `${taskWithContext}\n\n${webContext}`,
+      `${taskWithContext}\n\n${safeWebContext}`,
       (chunk) => send({ agent: ag.name, label: ag.label, content: chunk, status: "streaming" })
     );
     agentOutputs[ag.name] = content;
@@ -284,16 +250,13 @@ Kurallar:
 5. KRİTİK: Eğer mühendis bir [BUILD_APP] bloğu ürettiyse, sentez yanıtının SONUNA ekle.
 6. Eğer kullanıcı görsel istiyorsa sen de [GENERATE_IMAGE: prompt] ekle.`;
 
-  const synthesisPrompt = `${projectContext ? `${projectContext}\n\n` : ""}GÖREV: ${task}
+  const synthesisPrompt = `${projectContext ? `${wrapUntrustedContext("project_history", projectContext)}\n\n` : ""}GÖREV: ${task}
 
-ARAŞTIRMACI:
-${agentOutputs["researcher"] || "Yanıt alınamadı."}
+ ${wrapUntrustedContext("researcher_output", agentOutputs["researcher"] || "Yanıt alınamadı.")}
 
-MÜHENDİS:
-${coderWithoutApp || "Yanıt alınamadı."}
+ ${wrapUntrustedContext("engineer_output", coderWithoutApp || "Yanıt alınamadı.")}
 
-STRATEJİST:
-${agentOutputs["designer"] || "Yanıt alınamadı."}
+ ${wrapUntrustedContext("strategist_output", agentOutputs["designer"] || "Yanıt alınamadı.")}
 
 ---
 Şimdi bu üç görüşü sentezle ve kullanıcıya yönelik kapsamlı, doğrudan kullanışlı bir yanıt üret:`;
@@ -303,7 +266,7 @@ ${agentOutputs["designer"] || "Yanıt alınamadı."}
     synthesisContent = await runAgent(
       await getBestModels("synthesis"),
       synthesisSystem,
-      `${synthesisPrompt}\n\n${webContext}`,
+      `${synthesisPrompt}\n\n${safeWebContext}`,
       (chunk) => send({ agent: "synthesis", label: "Sentez", content: chunk, status: "streaming" })
     );
   } catch {

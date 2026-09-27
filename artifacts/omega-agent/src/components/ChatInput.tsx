@@ -2,9 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   Send, Image as ImageIcon, Square, Mic, MicOff,
   Code2, Layers, ChevronDown, Film, Paperclip, Globe,
-  Hash, Zap, Bot,
+  Hash, Zap, Bot, Volume2, VolumeX,
 } from 'lucide-react';
 import { AgentMode } from '@/hooks/use-chat';
+import { useOmegaVoice, type OmegaVoiceController } from '@/hooks/use-omega-voice';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { checkSuspicious, recordRequest, recordBlocked, speakAlert } from '@/lib/security';
@@ -17,6 +18,7 @@ interface ChatInputProps {
   onVideoGenerate?: (prompt: string) => void;
   onImageGenerate?: (prompt: string, style: string) => void;
   isGeneratingImage?: boolean;
+  voice?: OmegaVoiceController;
 }
 
 /* ─── Model options (shown in bar) ─── */
@@ -52,7 +54,7 @@ function Popup({ children, right }: { children: React.ReactNode; right?: boolean
 }
 
 export function ChatInput({
-  onSend, isStreaming, onStop, onVideoGenerate, onImageGenerate, isGeneratingImage: extGen,
+  onSend, isStreaming, onStop, onVideoGenerate, onImageGenerate, isGeneratingImage: extGen, voice: externalVoice,
 }: ChatInputProps) {
   const [input,           setInput]           = useState('');
   const [selectedModel,   setSelectedModel]   = useState<AgentMode>('multi');
@@ -63,11 +65,12 @@ export function ChatInput({
   const [attachedFile,    setAttachedFile]    = useState<ParsedFile | null>(null);
   const [imageStyle,      setImageStyle]      = useState('default');
   const [internalGen,     setInternalGen]     = useState(false);
-  const [isListening,     setIsListening]     = useState(false);
   const isGeneratingImage = extGen ?? internalGen;
 
   const textareaRef    = useRef<HTMLTextAreaElement>(null);
-  const recognitionRef = useRef<any>(null);
+  const localVoice = useOmegaVoice();
+  const voice = externalVoice ?? localVoice;
+  const isListening = voice.status === 'recording';
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -88,21 +91,23 @@ export function ChatInput({
 
   const activeModel = OMEGA_MODELS.find(m => m.id === selectedModel) || OMEGA_MODELS[0];
 
-  /* ── Voice ── */
-  const toggleVoice = () => {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      toast.error('Tarayıcınız ses tanımayı desteklemiyor');
+  /* ── AI voice input ── */
+  const toggleVoice = async () => {
+    if (!voice.supported) {
+      toast.error('Bu tarayıcıda mikrofon kullanılamıyor');
       return;
     }
-    if (isListening) { recognitionRef.current?.stop(); setIsListening(false); return; }
-    const Rec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    const rec = new Rec();
-    rec.lang = 'tr-TR'; rec.continuous = false; rec.interimResults = false;
-    rec.onresult = (e: any) => { setInput(p => p + (p ? ' ' : '') + e.results[0][0].transcript); setIsListening(false); };
-    rec.onerror  = () => setIsListening(false);
-    rec.onend    = () => setIsListening(false);
-    recognitionRef.current = rec;
-    rec.start(); setIsListening(true);
+    try {
+      if (isListening) {
+        const transcript = await voice.stopRecordingAndTranscribe();
+        if (transcript) onSend(transcript, selectedModel);
+        else toast.info('Ses anlaşılamadı, lütfen tekrar deneyin');
+      } else {
+        await voice.startRecording();
+      }
+    } catch {
+      toast.error('Mikrofon izni alınamadı');
+    }
   };
 
   /* ── Image generation ── */
@@ -381,16 +386,33 @@ Kullanıcı sorusu: ${text}`;
           </div>
 
           <div className="flex items-center gap-1.5">
-            {/* Mic */}
+            {/* AI voice output toggle */}
             <button
-              onClick={toggleVoice}
+              onClick={() => voice.setVoiceEnabled(!voice.enabled)}
               className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
               style={{
-                border: `1px solid ${isListening ? 'rgba(239,68,68,0.4)' : '#282828'}`,
-                color: isListening ? '#ef4444' : '#555',
-                background: isListening ? 'rgba(239,68,68,0.08)' : 'transparent',
+                border: `1px solid ${voice.enabled ? 'rgba(240,151,46,0.35)' : '#282828'}`,
+                color: voice.enabled ? '#F0972E' : '#555',
+                background: voice.enabled ? 'rgba(240,151,46,0.1)' : 'transparent',
               }}
-              title={isListening ? 'Durdur' : 'Sesle yaz'}
+              title={voice.enabled ? 'Omega sesini kapat' : 'Omega sesini aç'}
+              aria-label={voice.enabled ? 'Omega sesini kapat' : 'Omega sesini aç'}
+            >
+              {voice.enabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+            </button>
+
+            {/* AI microphone */}
+            <button
+              onClick={toggleVoice}
+              disabled={voice.status === 'transcribing'}
+              className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+              style={{
+                border: `1px solid ${isListening ? 'rgba(240,151,46,0.45)' : '#282828'}`,
+                color: isListening ? '#F0972E' : voice.status === 'transcribing' ? '#777' : '#555',
+                background: isListening ? 'rgba(240,151,46,0.1)' : 'transparent',
+              }}
+              title={isListening ? 'Kaydı bitir' : voice.status === 'transcribing' ? 'Ses çözümleniyor' : 'Omega ile konuş'}
+              aria-label={isListening ? 'Ses kaydını bitir' : 'Omega ile konuş'}
             >
               {isListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
             </button>

@@ -5,3 +5,4 @@
 - [PWA branding](pwa-branding.md) — Chrome ana ekran kimliği manifest, gerçek PNG ikonlar ve OMEGA AI kısa adıyla tanımlanmalı.
 - [Omega live web and logo](omega-live-web-and-logo.md) — Agent canlı web bağlamını tüm uzmanlara taşır; UI bekleme durumlarında şeffaf hareketli Ω kullanılır.
 - [Omega security boundary](omega-security-boundary.md) — Güçlü modeller için sunucu guard’ı, untrusted context etiketleri ve çıktı sızıntısı kontrolü birlikte korunmalı.
+- [Omega voice interaction](omega-voice.md) — Sesli sohbet açıkça etkinleştirilir; Türkçe STT/TTS AI üzerinden gider, oyuncu/karakter sesi taklit edilmez.

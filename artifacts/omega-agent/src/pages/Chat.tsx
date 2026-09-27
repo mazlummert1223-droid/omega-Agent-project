@@ -8,6 +8,7 @@ import { VideoGenerator } from '@/components/VideoGenerator';
 import { useSidebar } from '@/App';
 import { OmegaMark } from '@/components/Sidebar';
 import { Loader2, Menu } from 'lucide-react';
+import { useOmegaVoice } from '@/hooks/use-omega-voice';
 
 export default function ChatPage() {
   const { id } = useParams();
@@ -16,6 +17,8 @@ export default function ChatPage() {
   const { toggle } = useSidebar();
   const [videoPrompt, setVideoPrompt] = useState<string | null>(null);
   const [pendingImage, setPendingImage] = useState<{ prompt: string; style: string } | null>(null);
+  const voice = useOmegaVoice();
+  const voiceBaselineRef = useRef<string | number | null | undefined>(undefined);
 
   const { data: conversation, loading } = useLocalConversation(convId);
   const { sendMessage, isStreaming, currentStreamedText, multiTaskEvents, synthesisText, stopStream } = useChatStream(convId);
@@ -72,6 +75,25 @@ export default function ChatPage() {
       scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, [conversation?.messages, currentStreamedText, multiTaskEvents]);
+
+  /* Speak only newly completed assistant messages when voice mode is enabled. */
+  useEffect(() => {
+    if (!conversation) return;
+    const lastAssistant = [...(conversation.messages || [])]
+      .reverse()
+      .find(message => message.role === 'assistant');
+    const lastId = lastAssistant?.id ?? null;
+
+    if (voiceBaselineRef.current === undefined) {
+      voiceBaselineRef.current = lastId;
+      return;
+    }
+
+    if (!isStreaming && voice.enabled && lastAssistant && lastId !== voiceBaselineRef.current) {
+      voiceBaselineRef.current = lastId;
+      void voice.speak(lastAssistant.content);
+    }
+  }, [conversation, isStreaming, voice.enabled, voice.speak]);
 
   if (loading) {
     return (
@@ -205,6 +227,7 @@ export default function ChatPage() {
           onVideoGenerate={(prompt) => setVideoPrompt(prompt)}
           onImageGenerate={handleImageGenerate}
           isGeneratingImage={pendingImage !== null}
+          voice={voice}
         />
       </div>
 

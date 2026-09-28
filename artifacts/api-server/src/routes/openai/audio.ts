@@ -7,6 +7,8 @@ import {
 import { getSecurityBoundaryResponse } from "../../lib/omega-guard";
 
 const router: IRouter = Router();
+const VOICES = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"] as const;
+type VoiceName = typeof VOICES[number];
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 12 * 1024 * 1024 },
@@ -53,6 +55,10 @@ router.post("/voice/transcribe", upload.single("audio"), async (req, res) => {
 
 router.post("/voice/speak", async (req, res) => {
   const text = cleanSpeechText(req.body?.text);
+  const requestedVoice = typeof req.body?.voice === "string" ? req.body.voice : "onyx";
+  const voice: VoiceName = (VOICES as readonly string[]).includes(requestedVoice)
+    ? requestedVoice as VoiceName
+    : "onyx";
   if (!text) {
     res.status(400).json({ error: "Seslendirilecek metin bulunamadı." });
     return;
@@ -69,7 +75,7 @@ router.post("/voice/speak", async (req, res) => {
     // fictional character. The instruction also improves Turkish prosody.
     const audio = await textToSpeech(
       text,
-      "onyx",
+      voice,
       "mp3",
       "Use an original frightening, low-register synthetic male voice with a controlled metallic resonance and restrained cinematic menace. Sound intelligent, calm, and unsettling rather than shouted or exaggerated. Keep Turkish vowels clear, connect phrases smoothly, vary intonation naturally, and avoid robotic pauses.",
     );

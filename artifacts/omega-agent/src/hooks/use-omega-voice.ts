@@ -1,7 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export type OmegaVoiceStatus = "idle" | "recording" | "transcribing" | "speaking";
+export type OmegaVoiceName = "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer";
 export type OmegaVoiceController = ReturnType<typeof useOmegaVoice>;
+
+export const OMEGA_VOICE_OPTIONS: Array<{
+  id: OmegaVoiceName;
+  label: string;
+  description: string;
+}> = [
+  { id: "alloy", label: "Alloy", description: "Dengeli ve temiz" },
+  { id: "echo", label: "Echo", description: "Derin ve ciddi" },
+  { id: "fable", label: "Fable", description: "Sinematik ve karakterli" },
+  { id: "onyx", label: "Onyx", description: "Karanlık ve metalik" },
+  { id: "nova", label: "Nova", description: "Canlı ve doğal" },
+  { id: "shimmer", label: "Shimmer", description: "Yumuşak ve akıcı" },
+];
 
 function chooseMimeType(): string {
   if (typeof MediaRecorder === "undefined") return "audio/webm";
@@ -24,6 +38,16 @@ export function useOmegaVoice() {
       return localStorage.getItem("omega-voice-enabled") === "true";
     } catch {
       return false;
+    }
+  });
+  const [voiceName, setVoiceNameState] = useState<OmegaVoiceName>(() => {
+    try {
+      const saved = localStorage.getItem("omega-voice-name");
+      return OMEGA_VOICE_OPTIONS.some(option => option.id === saved)
+        ? saved as OmegaVoiceName
+        : "onyx";
+    } catch {
+      return "onyx";
     }
   });
   const [status, setStatus] = useState<OmegaVoiceStatus>("idle");
@@ -59,6 +83,13 @@ export function useOmegaVoice() {
     } catch {}
     if (!next) stopSpeaking();
   }, [stopSpeaking]);
+
+  const setVoice = useCallback((next: OmegaVoiceName) => {
+    setVoiceNameState(next);
+    try {
+      localStorage.setItem("omega-voice-name", next);
+    } catch {}
+  }, []);
 
   const startRecording = useCallback(async () => {
     if (!supported || status === "recording") return;
@@ -122,7 +153,7 @@ export function useOmegaVoice() {
       const response = await fetch("/api/openai/voice/speak", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, voice: voiceName }),
       });
       if (!response.ok) throw new Error("speech synthesis failed");
       if (generation !== speechGenerationRef.current) {
@@ -157,7 +188,7 @@ export function useOmegaVoice() {
         stopSpeaking();
       }
     }
-  }, [enabled, stopSpeaking]);
+  }, [enabled, stopSpeaking, voiceName]);
 
   const enqueueSpeech = useCallback((text: string) => {
     if (!enabled || !text.trim()) return;
@@ -181,6 +212,8 @@ export function useOmegaVoice() {
   return {
     enabled,
     setVoiceEnabled,
+    voiceName,
+    setVoice,
     status,
     supported,
     startRecording,

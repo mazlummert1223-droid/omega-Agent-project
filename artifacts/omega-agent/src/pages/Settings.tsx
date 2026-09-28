@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import {
   Paintbrush, Bell, Shield, Zap, CreditCard, Code2, Info,
-  Sun, Moon, Monitor, ChevronRight
+  Sun, Moon, Monitor, ChevronRight, Volume2, Play, Square
 } from 'lucide-react';
 import { signOut } from '@/lib/auth';
 import { getUser } from '@/lib/auth';
 import { toast } from 'sonner';
+import { OMEGA_VOICE_OPTIONS, type OmegaVoiceName } from '@/hooks/use-omega-voice';
 
 const SECTIONS = [
   { id: 'general',     label: 'General',       Icon: Monitor  },
+  { id: 'voice',       label: 'Omega Voice',   Icon: Volume2 },
   { id: 'appearance',  label: 'Appearance',    Icon: Paintbrush },
   { id: 'notifications', label: 'Notifications', Icon: Bell },
   { id: 'privacy',     label: 'Data & Privacy', Icon: Shield  },
@@ -38,6 +40,12 @@ export default function SettingsPage() {
   const [notifications, setNotifications] = useState(() => localStorage.getItem('omega_notifications') !== 'false');
   const [fontSize, setFontSize] = useState(() => localStorage.getItem('omega_font_size') || 'medium');
   const [density, setDensity] = useState(() => localStorage.getItem('omega_density') || 'comfortable');
+  const [voiceName, setVoiceName] = useState<OmegaVoiceName>(() => {
+    const saved = localStorage.getItem('omega-voice-name');
+    return OMEGA_VOICE_OPTIONS.some(option => option.id === saved) ? saved as OmegaVoiceName : 'onyx';
+  });
+  const [previewingVoice, setPreviewingVoice] = useState<OmegaVoiceName | null>(null);
+  const previewAudioRef = React.useRef<HTMLAudioElement | null>(null);
   const [testingConnection, setTestingConnection] = useState(false);
   const user = getUser();
 
@@ -50,10 +58,43 @@ export default function SettingsPage() {
     localStorage.setItem('omega_notifications', String(notifications));
     localStorage.setItem('omega_font_size', fontSize);
     localStorage.setItem('omega_density', density);
+    localStorage.setItem('omega-voice-name', voiceName);
     document.documentElement.dataset.omegaTheme = theme;
     document.documentElement.dataset.omegaFontSize = fontSize;
     document.documentElement.dataset.omegaDensity = density;
-  }, [theme, lang, tz, autoSave, confirmDel, notifications, fontSize, density]);
+  }, [theme, lang, tz, autoSave, confirmDel, notifications, fontSize, density, voiceName]);
+
+  const previewVoice = async (nextVoice: OmegaVoiceName) => {
+    previewAudioRef.current?.pause();
+    setPreviewingVoice(nextVoice);
+    try {
+      const response = await fetch('/api/openai/voice/speak', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          voice: nextVoice,
+          text: 'Merhaba. Ben Omega. Bu ses seçimini önizliyorsun.',
+        }),
+      });
+      if (!response.ok) throw new Error();
+      const url = URL.createObjectURL(await response.blob());
+      const audio = new Audio(url);
+      previewAudioRef.current = audio;
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        previewAudioRef.current = null;
+        setPreviewingVoice(null);
+      };
+      await audio.play();
+    } catch {
+      setPreviewingVoice(null);
+      toast.error('Ses önizlemesi üretilemedi');
+    }
+  };
+
+  useEffect(() => () => {
+    previewAudioRef.current?.pause();
+  }, []);
 
   const clearData = () => {
     if (confirmDel && !window.confirm('Tüm yerel sohbet, uygulama ve ayar verileri silinsin mi?')) return;
@@ -199,6 +240,50 @@ export default function SettingsPage() {
                 ))}
               </div>
             </div>
+          </div>
+        )}
+
+        {section === 'voice' && (
+          <div className="max-w-lg animate-fade-up">
+            <h3 className="text-[17px] font-display font-semibold mb-2" style={{ color: '#E8E8E8' }}>Omega Voice</h3>
+            <p className="text-[13px] mb-6" style={{ color: '#666' }}>
+              Sohbet yanıtlarının okunacağı sesi seç. Dinlemek için önizleme düğmesine bas.
+            </p>
+            <div className="rounded-2xl p-4 space-y-2" style={{ background: '#111', border: '1px solid #1E1E1E' }}>
+              {OMEGA_VOICE_OPTIONS.map(option => {
+                const active = voiceName === option.id;
+                const playing = previewingVoice === option.id;
+                return (
+                  <div key={option.id} className="flex items-center gap-3 rounded-xl p-3 transition-all"
+                    style={{ background: active ? 'rgba(240,151,46,0.10)' : '#181818', border: `1px solid ${active ? 'rgba(240,151,46,0.35)' : '#252525'}` }}>
+                    <button onClick={() => setVoiceName(option.id)} className="flex-1 min-w-0 text-left">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[13px] font-semibold" style={{ color: active ? '#F0972E' : '#CCC' }}>{option.label}</span>
+                        {active && <span className="text-[9px] uppercase tracking-wider" style={{ color: '#F0972E' }}>Seçili</span>}
+                      </div>
+                      <div className="text-[11px] mt-0.5" style={{ color: '#666' }}>{option.description}</div>
+                    </button>
+                    <button onClick={() => {
+                      if (playing) {
+                        previewAudioRef.current?.pause();
+                        previewAudioRef.current = null;
+                        setPreviewingVoice(null);
+                      } else {
+                        void previewVoice(option.id);
+                      }
+                    }}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ background: playing ? 'rgba(240,151,46,0.16)' : '#202020', border: '1px solid #2D2D2D', color: playing ? '#F0972E' : '#777' }}
+                      title={playing ? 'Önizlemeyi durdur' : 'Sesi önizle'}>
+                      {playing ? <Square className="w-3 h-3" fill="currentColor" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-[11px] mt-3" style={{ color: '#444' }}>
+              Ses seçimi cihazında saklanır ve sohbet seslendirmelerinde otomatik kullanılır.
+            </p>
           </div>
         )}
 

@@ -170,24 +170,38 @@ export async function voiceChatStream(
   })();
 }
 
-/** Text-to-Speech using gpt-audio. */
+/** Natural Text-to-Speech with a compatibility fallback. */
 export async function textToSpeech(
   text: string,
   voice: "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer" = "alloy",
   format: "wav" | "mp3" | "flac" | "opus" | "pcm16" = "wav",
   instruction = "Read the text verbatim in natural Turkish with clear pronunciation, smooth pacing, and human-like pauses.",
 ): Promise<Buffer> {
-  const response = await openai.chat.completions.create({
-    model: "gpt-audio",
-    modalities: ["text", "audio"],
-    audio: { voice, format },
-    messages: [
-      { role: "system", content: `You are a professional Turkish voice performer. ${instruction}` },
-      { role: "user", content: `Repeat the following text verbatim: ${text}` },
-    ],
-  });
-  const audioData = (response.choices[0]?.message as any)?.audio?.data ?? "";
-  return Buffer.from(audioData, "base64");
+  try {
+    // The dedicated speech endpoint produces more conversational prosody than
+    // asking a chat completion to repeat text. Keep the fallback below because
+    // some managed AI environments expose gpt-audio before this endpoint.
+    const speech = await (openai.audio as any).speech.create({
+      model: "gpt-4o-mini-tts",
+      voice,
+      input: text,
+      instructions: instruction,
+      response_format: format === "pcm16" ? "pcm" : format,
+    });
+    return Buffer.from(await speech.arrayBuffer());
+  } catch {
+    const response = await openai.chat.completions.create({
+      model: "gpt-audio",
+      modalities: ["text", "audio"],
+      audio: { voice, format },
+      messages: [
+        { role: "system", content: `You are a natural Turkish conversational speaker. ${instruction}` },
+        { role: "user", content: text },
+      ],
+    });
+    const audioData = (response.choices[0]?.message as any)?.audio?.data ?? "";
+    return Buffer.from(audioData, "base64");
+  }
 }
 
 /** Streaming Text-to-Speech. */

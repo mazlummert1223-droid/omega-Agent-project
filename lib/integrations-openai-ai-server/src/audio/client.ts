@@ -174,14 +174,15 @@ export async function voiceChatStream(
 export async function textToSpeech(
   text: string,
   voice: "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer" = "alloy",
-  format: "wav" | "mp3" | "flac" | "opus" | "pcm16" = "wav"
+  format: "wav" | "mp3" | "flac" | "opus" | "pcm16" = "wav",
+  instruction = "Read the text verbatim in natural Turkish with clear pronunciation, smooth pacing, and human-like pauses.",
 ): Promise<Buffer> {
   const response = await openai.chat.completions.create({
     model: "gpt-audio",
     modalities: ["text", "audio"],
     audio: { voice, format },
     messages: [
-      { role: "system", content: "You are an assistant that performs text-to-speech." },
+      { role: "system", content: `You are a professional Turkish voice performer. ${instruction}` },
       { role: "user", content: `Repeat the following text verbatim: ${text}` },
     ],
   });

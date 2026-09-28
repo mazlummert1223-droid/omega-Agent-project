@@ -243,7 +243,11 @@ export function useChatStream(conversationId: string | null) {
 
         dispatchConvUpdate();
       }
-    } catch {}
+    } catch {
+      const errorText = "⚠️ Omega şu anda yanıt üretemedi. Bağlantıyı kontrol edip tekrar dene.";
+      LocalDB.addMessage(conversationId, 'assistant', errorText);
+      dispatchConvUpdate();
+    }
     finally {
       setIsStreaming(false);
       setCurrentText("");

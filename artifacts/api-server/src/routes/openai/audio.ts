@@ -28,9 +28,13 @@ function cleanSpeechText(value: unknown): string {
     .replace(/\[BUILD_APP\][\s\S]*?\[\/BUILD_APP\]/gi, "Uygulama hazırlandı.")
     .replace(/```[\s\S]*?```/g, "Kod bloğu oluşturuldu.")
     .replace(/https?:\/\/\S+/gi, "")
+    .replace(/^#{1,6}\s*/gm, "")
+    .replace(/^\s*[-*+]\s+/gm, "")
+    .replace(/^\s*\d+[.)]\s+/gm, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
     .replace(/\s{2,}/g, " ")
     .trim()
-    .slice(0, 6_000);
+    .slice(0, 3_200);
 }
 
 router.post("/voice/transcribe", upload.single("audio"), async (req, res) => {
@@ -61,9 +65,14 @@ router.post("/voice/speak", async (req, res) => {
   }
 
   try {
-    // Onyx is a deep, neutral synthetic voice. It is an original AI voice,
-    // not an imitation of a named actor or fictional character.
-    const audio = await textToSpeech(text, "onyx", "mp3");
+    // A deep, precise cinematic AI style without imitating a named actor or
+    // fictional character. The instruction also improves Turkish prosody.
+    const audio = await textToSpeech(
+      text,
+      "onyx",
+      "mp3",
+      "Use an original deep, calm, precise synthetic male voice with a subtle cinematic computer character. Keep Turkish vowels clear, connect phrases smoothly, vary intonation naturally, and avoid robotic pauses.",
+    );
     res.setHeader("Content-Type", "audio/mpeg");
     res.setHeader("Cache-Control", "no-store");
     res.send(audio);

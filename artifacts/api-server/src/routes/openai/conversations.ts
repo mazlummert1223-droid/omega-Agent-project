@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { conversations, messages } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { openrouter } from "@workspace/integrations-openrouter-ai";
+import { callFrontier } from "../../lib/omega-frontier";
 import {
   CreateOpenaiConversationBody,
   SendOpenaiMessageBody,
@@ -220,7 +221,6 @@ router.post("/conversations/:id/messages", async (req, res) => {
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
-  res.write(`data: ${JSON.stringify({ content: "🌐 Canlı internet kaynakları kontrol ediliyor...\n\n" })}\n\n`);
   const webContext = wrapUntrustedContext("live_web", await getLiveWebContext(body.content));
 
   const boundedHistory = history
@@ -237,11 +237,22 @@ router.post("/conversations/:id/messages", async (req, res) => {
   let fullResponse = "";
 
   try {
-    fullResponse = await callWithFallback(
-      await getBestModels(agentMode === "coder" ? "coder" : agentMode === "researcher" ? "researcher" : "general"),
-      chatMessages,
-      (chunk) => { res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`); }
+    const fallbackModels = await getBestModels(
+      agentMode === "coder" ? "coder" : agentMode === "researcher" ? "researcher" : "general",
     );
+    const streamChunk = (chunk: string) => {
+      res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);
+    };
+
+    // Origin and Quantum use the stronger route first; every mode still has
+    // the live OpenRouter fallback so a provider outage does not look like a
+    // silent, unfinished chat.
+    if (agentMode === "auto" || agentMode === "quantum") {
+      fullResponse = await callFrontier(chatMessages, streamChunk, agentMode === "quantum" ? 12_000 : 8_192);
+    }
+    if (!fullResponse) {
+      fullResponse = await callWithFallback(fallbackModels, chatMessages, streamChunk);
+    }
 
     if (!fullResponse) {
       res.write(`data: ${JSON.stringify({ content: "Üzgünüm, şu an tüm modeller meşgul. Lütfen birkaç saniye bekleyip tekrar dene." })}\n\n`);
@@ -278,7 +289,6 @@ router.post("/stream-stateless", async (req, res) => {
     writeSecurityBoundaryStream(res, guardedResponse);
     return;
   }
-  res.write(`data: ${JSON.stringify({ content: "🌐 Canlı internet kaynakları kontrol ediliyor...\n\n" })}\n\n`);
   const webContext = wrapUntrustedContext("live_web", await getLiveWebContext(lastUser?.content || ""));
 
   const boundedMessages = Array.isArray(messages)
@@ -295,13 +305,22 @@ router.post("/stream-stateless", async (req, res) => {
   ];
 
   try {
-    await callWithFallback(
-      await getBestModels(agentMode === "coder" ? "coder" : agentMode === "researcher" ? "researcher" : "general"),
-      chatMessages,
-      (chunk) => {
-      res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);
-      },
+    const fallbackModels = await getBestModels(
+      agentMode === "coder" ? "coder" : agentMode === "researcher" ? "researcher" : "general",
     );
+    const streamChunk = (chunk: string) => {
+      res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);
+    };
+    let responseText = "";
+    if (agentMode === "auto" || agentMode === "quantum") {
+      responseText = await callFrontier(chatMessages, streamChunk, agentMode === "quantum" ? 12_000 : 8_192);
+    }
+    if (!responseText) {
+      responseText = await callWithFallback(fallbackModels, chatMessages, streamChunk);
+    }
+    if (!responseText) {
+      res.write(`data: ${JSON.stringify({ content: "Şu anda yanıt üreten modellerden cevap alınamadı. Lütfen tekrar dene." })}\n\n`);
+    }
   } catch {
     res.write(`data: ${JSON.stringify({ content: "Bağlantı hatası oluştu. Lütfen tekrar dene." })}\n\n`);
   }

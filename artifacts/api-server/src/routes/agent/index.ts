@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { openrouter } from "@workspace/integrations-openrouter-ai";
+import { callFrontier } from "../../lib/omega-frontier";
 import { db } from "@workspace/db";
 import { messages } from "@workspace/db";
 import { getBestModels } from "../../lib/ai-models";
@@ -58,6 +59,16 @@ async function runAgent(
   userTask: string,
   onChunk: (text: string) => void
 ): Promise<string> {
+  const frontierContent = await callFrontier(
+    [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userTask },
+    ],
+    onChunk,
+    8_192,
+  );
+  if (frontierContent.trim().length > 30) return frontierContent;
+
   for (const model of models) {
     try {
       const stream = await openrouter.chat.completions.create({
@@ -142,13 +153,10 @@ router.post("/multi-task", async (req, res) => {
   const send = (data: object) => {
     try { res.write(`data: ${JSON.stringify(data)}\n\n`); } catch {}
   };
-  send({ agent: "web", label: "Canlı İnternet", status: "running" });
   const webContext = await getLiveWebContext(task);
   const projectContext = buildProjectContext((req.body as any)?.history, task);
   const taskWithContext = `${projectContext ? `${wrapUntrustedContext("project_history", projectContext)}\n\n` : ""}AKTİF KULLANICI İSTEĞİ:\n${task}`;
   const safeWebContext = wrapUntrustedContext("live_web", webContext);
-  send({ agent: "web", label: "Canlı İnternet", status: "done" });
-
   /* ── Agent definitions ── */
   const RESEARCHER_SYSTEM = `${OMEGA_IDENTITY_PROMPT}
  ${getModelIdentity("agent")}

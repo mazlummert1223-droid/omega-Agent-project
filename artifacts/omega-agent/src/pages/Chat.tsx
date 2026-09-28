@@ -19,9 +19,12 @@ export default function ChatPage() {
   const [pendingImage, setPendingImage] = useState<{ prompt: string; style: string } | null>(null);
   const voice = useOmegaVoice();
   const voiceBaselineRef = useRef<string | number | null | undefined>(undefined);
+  const voiceSpokenOffsetRef = useRef(0);
+  const voiceStreamingRef = useRef(false);
 
   const { data: conversation, loading } = useLocalConversation(convId);
   const { sendMessage, isStreaming, currentStreamedText, multiTaskEvents, synthesisText, stopStream } = useChatStream(convId);
+  const liveVoiceText = synthesisText || currentStreamedText;
 
   const handleImageGenerate = async (prompt: string, style: string) => {
     setPendingImage({ prompt, style });
@@ -60,6 +63,33 @@ export default function ChatPage() {
     }
   }, [convId]);
 
+  /* Start voice output as soon as complete sentences arrive instead of
+     waiting for a long streamed answer to finish. */
+  useEffect(() => {
+    if (!voice.enabled || !isStreaming || !liveVoiceText) return;
+    const remaining = liveVoiceText.slice(voiceSpokenOffsetRef.current);
+    if (remaining.length < 150) return;
+
+    const matches = [...remaining.matchAll(/[.!?。！？](?:\s|$)/g)];
+    const boundary = matches
+      .map(match => (match.index ?? 0) + match[0].length)
+      .filter(index => index >= 120)
+      .pop();
+    if (!boundary) return;
+
+    const segment = remaining.slice(0, boundary).trim();
+    voiceSpokenOffsetRef.current += boundary;
+    voiceStreamingRef.current = true;
+    voice.enqueueSpeech(segment);
+  }, [liveVoiceText, isStreaming, voice.enabled, voice.enqueueSpeech]);
+
+  useEffect(() => {
+    if (isStreaming) {
+      voiceSpokenOffsetRef.current = 0;
+      voiceStreamingRef.current = false;
+    }
+  }, [isStreaming]);
+
   /* Listen for video-open events fired by VideoTrigger buttons in messages */
   useEffect(() => {
     const handler = (e: Event) => {
@@ -91,9 +121,11 @@ export default function ChatPage() {
 
     if (!isStreaming && voice.enabled && lastAssistant && lastId !== voiceBaselineRef.current) {
       voiceBaselineRef.current = lastId;
-      void voice.speak(lastAssistant.content);
+      const remaining = lastAssistant.content.slice(voiceSpokenOffsetRef.current).trim();
+      if (remaining) voice.enqueueSpeech(remaining);
+      voiceSpokenOffsetRef.current = lastAssistant.content.length;
     }
-  }, [conversation, isStreaming, voice.enabled, voice.speak]);
+  }, [conversation, isStreaming, voice.enabled, voice.enqueueSpeech]);
 
   if (loading) {
     return (

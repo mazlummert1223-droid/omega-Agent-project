@@ -32,6 +32,9 @@ export function useOmegaVoice() {
   const chunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
+  const speechQueueRef = useRef<string[]>([]);
+  const speechBusyRef = useRef(false);
+  const speechGenerationRef = useRef(0);
 
   const supported =
     typeof window !== "undefined" &&
@@ -39,6 +42,9 @@ export function useOmegaVoice() {
     typeof MediaRecorder !== "undefined";
 
   const stopSpeaking = useCallback(() => {
+    speechGenerationRef.current += 1;
+    speechQueueRef.current = [];
+    speechBusyRef.current = false;
     audioRef.current?.pause();
     audioRef.current = null;
     if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
@@ -101,9 +107,16 @@ export function useOmegaVoice() {
     }
   }, []);
 
-  const speak = useCallback(async (text: string) => {
-    if (!enabled || !text.trim()) return;
-    stopSpeaking();
+  const playNextSpeech = useCallback(async () => {
+    if (!enabled || speechBusyRef.current || speechQueueRef.current.length === 0) return;
+    const text = speechQueueRef.current.shift()?.trim();
+    if (!text) {
+      void playNextSpeech();
+      return;
+    }
+
+    speechBusyRef.current = true;
+    const generation = speechGenerationRef.current;
     setStatus("speaking");
     try {
       const response = await fetch("/api/openai/voice/speak", {
@@ -112,10 +125,15 @@ export function useOmegaVoice() {
         body: JSON.stringify({ text }),
       });
       if (!response.ok) throw new Error("speech synthesis failed");
+      if (generation !== speechGenerationRef.current) {
+        speechBusyRef.current = false;
+        return;
+      }
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       audioUrlRef.current = url;
       const audio = new Audio(url);
+      audio.preload = "auto";
       audioRef.current = audio;
       audio.onended = () => {
         if (audioUrlRef.current === url) {
@@ -123,13 +141,36 @@ export function useOmegaVoice() {
           audioUrlRef.current = null;
         }
         audioRef.current = null;
-        setStatus("idle");
+        speechBusyRef.current = false;
+        if (speechQueueRef.current.length > 0) {
+          void playNextSpeech();
+        } else {
+          setStatus("idle");
+        }
       };
       await audio.play();
     } catch {
-      stopSpeaking();
+      speechBusyRef.current = false;
+      if (speechQueueRef.current.length > 0) {
+        void playNextSpeech();
+      } else {
+        stopSpeaking();
+      }
     }
   }, [enabled, stopSpeaking]);
+
+  const enqueueSpeech = useCallback((text: string) => {
+    if (!enabled || !text.trim()) return;
+    speechQueueRef.current.push(text.trim());
+    void playNextSpeech();
+  }, [enabled, playNextSpeech]);
+
+  const speak = useCallback((text: string) => {
+    if (!enabled || !text.trim()) return;
+    stopSpeaking();
+    speechQueueRef.current.push(text.trim());
+    void playNextSpeech();
+  }, [enabled, playNextSpeech, stopSpeaking]);
 
   useEffect(() => () => {
     recorderRef.current?.stop();
@@ -145,6 +186,7 @@ export function useOmegaVoice() {
     startRecording,
     stopRecordingAndTranscribe,
     speak,
+    enqueueSpeech,
     stopSpeaking,
   };
 }

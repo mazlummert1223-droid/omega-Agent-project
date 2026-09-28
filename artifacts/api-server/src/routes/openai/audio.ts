@@ -71,7 +71,7 @@ router.post("/voice/speak", async (req, res) => {
       text,
       "onyx",
       "mp3",
-      "Use an original deep, calm, precise synthetic male voice with a subtle cinematic computer character. Keep Turkish vowels clear, connect phrases smoothly, vary intonation naturally, and avoid robotic pauses.",
+      "Use an original frightening, low-register synthetic male voice with a controlled metallic resonance and restrained cinematic menace. Sound intelligent, calm, and unsettling rather than shouted or exaggerated. Keep Turkish vowels clear, connect phrases smoothly, vary intonation naturally, and avoid robotic pauses.",
     );
     res.setHeader("Content-Type", "audio/mpeg");
     res.setHeader("Cache-Control", "no-store");

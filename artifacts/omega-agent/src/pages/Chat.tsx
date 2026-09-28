@@ -68,12 +68,14 @@ export default function ChatPage() {
   useEffect(() => {
     if (!voice.enabled || !isStreaming || !liveVoiceText) return;
     const remaining = liveVoiceText.slice(voiceSpokenOffsetRef.current);
-    if (remaining.length < 150) return;
+    // Very short TTS requests sound clipped and create audible gaps. Wait for
+    // a fuller thought, then keep the final remainder for one natural phrase.
+    if (remaining.length < 420) return;
 
     const matches = [...remaining.matchAll(/[.!?。！？](?:\s|$)/g)];
     const boundary = matches
       .map(match => (match.index ?? 0) + match[0].length)
-      .filter(index => index >= 120)
+      .filter(index => index >= 360)
       .pop();
     if (!boundary) return;
 

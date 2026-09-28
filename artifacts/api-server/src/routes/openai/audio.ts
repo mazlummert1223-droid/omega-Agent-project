@@ -71,13 +71,14 @@ router.post("/voice/speak", async (req, res) => {
   }
 
   try {
-    // A deep, precise cinematic AI style without imitating a named actor or
-    // fictional character. The instruction also improves Turkish prosody.
+    // Keep every selectable voice natural and conversational. The provider
+    // voice itself supplies the variety; styling must not add theatrical,
+    // frightening, metallic, or character-like delivery.
     const audio = await textToSpeech(
       text,
       voice,
       "mp3",
-      "Use an original frightening, low-register synthetic male voice with a controlled metallic resonance and restrained cinematic menace. Sound intelligent, calm, and unsettling rather than shouted or exaggerated. Keep Turkish vowels clear, connect phrases smoothly, vary intonation naturally, and avoid robotic pauses.",
+      "Speak natural Turkish like a clear, helpful conversational assistant. Use a normal human-like tone, smooth connected phrasing, accurate pronunciation, moderate-fast pacing, short natural pauses only at punctuation, and clear emphasis. Do not sound theatrical, frightening, metallic, dramatic, whispery, or like a fictional character.",
     );
     res.setHeader("Content-Type", "audio/mpeg");
     res.setHeader("Cache-Control", "no-store");

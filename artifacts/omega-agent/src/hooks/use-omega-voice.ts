@@ -9,12 +9,12 @@ export const OMEGA_VOICE_OPTIONS: Array<{
   label: string;
   description: string;
 }> = [
-  { id: "alloy", label: "Alloy", description: "Dengeli ve temiz" },
-  { id: "echo", label: "Echo", description: "Derin ve ciddi" },
-  { id: "fable", label: "Fable", description: "Sinematik ve karakterli" },
-  { id: "onyx", label: "Onyx", description: "Karanlık ve metalik" },
-  { id: "nova", label: "Nova", description: "Canlı ve doğal" },
-  { id: "shimmer", label: "Shimmer", description: "Yumuşak ve akıcı" },
+  { id: "alloy", label: "Alloy", description: "Dengeli ve doğal" },
+  { id: "echo", label: "Echo", description: "Net ve tok" },
+  { id: "fable", label: "Fable", description: "İfade gücü yüksek" },
+  { id: "onyx", label: "Onyx", description: "Sakin ve anlaşılır" },
+  { id: "nova", label: "Nova", description: "Canlı ve akıcı" },
+  { id: "shimmer", label: "Shimmer", description: "Yumuşak ve doğal" },
 ];
 
 function chooseMimeType(): string {
